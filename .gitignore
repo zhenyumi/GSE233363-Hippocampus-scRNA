@@ -1,0 +1,45 @@
+# === Data files (large, user-specific) ===
+data/raw/
+data/processed/*.rds
+data/processed/*.csv
+
+# === Figures (generated) ===
+figures/
+Rplots.pdf
+
+# === R environment ===
+renv/
+.Rhistory
+.Rdata
+.RData
+*.Rproj.user/
+
+# === OpenCode (local config) ===
+.opencode/
+
+# === macOS ===
+.DS_Store
+._*
+
+# === Spatial transcriptomics (future) ===
+results/
+cache/
+reports/
+*.h5ad
+*.h5
+*.mtx
+*.mtx.gz
+*.tsv.gz
+*.csv.gz
+*.loom
+*.qs
+*.qsave
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === Copyrighted material ===
+docs/original_paper.pdf

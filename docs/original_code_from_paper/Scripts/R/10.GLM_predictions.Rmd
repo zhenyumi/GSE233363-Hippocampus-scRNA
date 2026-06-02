@@ -1,0 +1,300 @@
+---
+title: "Age clock of our scRNA-seq data"
+author: "Vladyslav Korobeynyk at Jessberger/Robinsonlab, UZH"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    code_download: true
+    number_sections: true
+    df_print: kable
+    theme: lumen
+params:
+  seed: 665
+---
+
+The goal is to generate a predictive model that is able to discriminate between different age groups (old, middle, young) using transcriptomic data. Here the model was build including all celltypes and age points.
+
+# Setup
+```{r setup}
+# Load libraries
+library(Seurat)
+library(caret)
+library(dplyr)
+library(parallel)
+library(stringr)
+
+# label_1 , label_2
+# i.e. if label_1 cells in total are 62 and label_2 120, then the training set will consist of
+# 50% label_1 = 31 and 31 of label_2
+create_dataset_train_test_randomsampling = function(df, p , seed, labels ,scale) {
+    # df - data.frame that contains all data, rows are labels and columns are predictors
+    # p is a proportion of data to use for training (it takes the proportion of the less populated class of cells)
+    # seed - seed to sample randomly in each iterationlibrary(parallel)
+    # labels is a big vector with repeated elements (labels)
+    # scale - bool to indicate if to scale data or not
+
+    set.seed(seed)
+    names_labels = table(labels) %>% names    
+
+    if(scale == TRUE)
+    {
+        df = scale(df)
+    }
+
+    # Find which label has the least amount of samples
+    min_samples = table(labels) %>% min
+
+                            ### Train dataset
+
+    ## Split data separately for each label in labels to have the same proportion
+    # also generate labels for training data
+    tmp_lst_cellSampling_forTrain = list()
+    labels_train = vector()
+    for(label in names_labels)
+    {
+        n = sample(grep(label, labels), size = min_samples * p, replace = F)
+        tmp_lst_cellSampling_forTrain[[label]] = n
+        labels_train = append(labels_train, rep(label, length(n)))
+    }
+
+    # Create train and test data
+    df_train = df[c(unlist(tmp_lst_cellSampling_forTrain)),]
+    colnames(df_train) = gsub("[.,-]" , "_" , colnames(df_train))
+    
+    labels_train = labels[unlist(tmp_lst_cellSampling_forTrain)]
+
+                        #### Test dataset
+    
+    df_test = df[-c(unlist(tmp_lst_cellSampling_forTrain)),]
+    colnames(df_test) = gsub("[.,-]" , "_" , colnames(df_test))
+    
+    # Some gene names start with number like 1110008P14Rik, so append x before gene name
+    tmp_n = which(substr(colnames(df_test), 1, 1) %in% c(seq(0,10)))
+    colnames(df_test)[tmp_n] = as.list(colnames(df_test)[tmp_n]) %>% str_c("x" ,.) 
+    
+    labels_test = labels[-unlist(tmp_lst_cellSampling_forTrain)]
+    
+    
+    # Check if the labels assignment and dataframe of train set were subset correctly
+    stopifnot(names(labels_train) == rownames(df_train))
+    stopifnot(names(labels_test) == rownames(df_test))
+    # Generate label for test dataset
+    ret = list(
+        df_train = df_train %>% as.data.frame,
+        df_test = df_test %>% as.data.frame,
+        labels_train = labels_train %>% as.vector,
+        labels_test = labels_test %>% as.vector)
+    return(ret)
+}
+```
+
+# Load data
+```{r load_data}
+SO = readRDS("seurat_Chromium_All.rds")
+
+# Some gene names start with number like 1110008P14Rik, so append x before gene name
+tmp_n = which(substr(rownames(SO@assays$RNA@counts), 1, 1) %in% c(seq(0,10)))
+rownames(SO@assays$RNA@counts)[tmp_n] = as.list(rownames(SO@assays$RNA@counts)[tmp_n]) %>% str_c("x" ,.) 
+rownames(SO@assays$RNA@data)[tmp_n] = as.list(rownames(SO@assays$RNA@data)[tmp_n]) %>% str_c("x" ,.) 
+
+# Remove from gene names "-" -> problem for formular creation
+rownames(SO@assays$RNA@counts) = gsub("-", ".", rownames(SO@assays$RNA@counts))
+rownames(SO@assays$RNA@data) = gsub("-", ".", rownames(SO@assays$RNA@data))
+
+# Change "-" for "_" in Cajal-Retzius
+SO@meta.data$Celltype = gsub("-","_",SO@meta.data$Celltype)
+```
+
+Clustering at different Principal Components in the PCA
+
+# Build global model with all celltypes
+```{r global_model, warning=FALSE}
+# Select cell type
+tmp_SO = SO[VariableFeatures(SO),]
+
+# Merge old samples
+tmp_SO$orig.ident[which(tmp_SO$orig.ident == "o2")] = "o1"
+tmp_SO$orig.ident[which(tmp_SO$orig.ident == "o1")] = "o"
+
+labels = tmp_SO@meta.data$orig.ident
+names(labels) = tmp_SO@meta.data %>% rownames
+
+# Transopose the dataframe to have cells as rows
+df = tmp_SO@assays$RNA@data %>% as.matrix %>% t %>% as.data.frame
+
+# Create test and train data
+data_randomsampling = create_dataset_train_test_randomsampling(df, p = 0.7,seed = 1,labels = labels,scale = FALSE)
+
+# Extract data
+data_train = data_randomsampling$df_train %>% data.frame
+data_train$label = data_randomsampling$labels_train
+data_test = data_randomsampling$df_test
+result = as.factor(data_randomsampling$labels_test)
+
+set.seed(1)
+# train the models
+# Cross validation 10 folds with 10-90 split
+ctrl = trainControl(method = "cv", number = 10, p = 0.9,classProbs = TRUE)
+model = train(label ~ . ,method = "glmnet", data = data_train,trControl = ctrl)
+pred_prob = predict(model, data_test, type = "prob")
+pred = predict(model, data_test)
+conf_matrix = caret::confusionMatrix(data = pred, reference = result)
+conf_matrix
+
+# save model + data
+data = list(pred_prob = pred_prob,
+            data_test = data_test,
+            model = model, 
+            pred = pred,
+            conf_matrix = conf_matrix,
+            result = result)
+saveRDS(data,"prediction_AllCelltypes_glmnet.RDS")
+```
+
+# Generate precision plots
+```{r generate_precision_plots, warning=FALSE, message=FALSE, fig.height= 16, fig.width=12}
+df_cellname_CT = data.frame(cellnames = rownames(tmp_SO@meta.data), celltype = tmp_SO@meta.data$Celltype, orig.ident = tmp_SO@meta.data$orig.ident)
+celltypes_vec = unique(SO@meta.data$Celltype)
+
+############ Generate list with plots of correctly classified cells for each celltype
+plots = list()
+statistics = list()
+for(CT in celltypes_vec)
+{
+  # create dataframe with specific celltype
+  n = which(df_cellname_CT$celltype == CT)
+  df_helper = df_cellname_CT[n,]
+  
+  # extract expression  matrix for the celltype (because in the model we have all celltypes) and predict the cells according to the model
+  df_celltype = data$data_test[which(rownames(data$data_test) %in% df_helper$cellnames),]
+  pred = predict(data$model, df_celltype)  
+  
+  # original labels of cells belonging to test data
+  result = data$result[which(rownames(data$data_test) %in% df_helper$cellnames)]
+  
+  # Create dataframe to display correctly and incorrectly classified categories (9x3 df)
+  df = data.frame(true = result, pred = pred, int_predicted = ifelse(result == pred, 1, -1))
+  df = df %>% dplyr::group_by(true,pred) %>% summarise(summed = sum(int_predicted))
+  
+  # Tranform the previous dataframe to percentages by true age (all true young percentage have to add to 1) -> this df will be input to ggplot
+  df_helper = df %>% group_by(true) %>% summarise(percentage = summed/sum(abs(summed)))
+  df$percentage = (df_helper$percentage * 100) %>% abs
+  df$percentage = round(df$percentage,1)
+  df$color = ifelse(df$true == df$pred, "Correctly predicted", "Incorrectly predicted")
+  
+  df$true = factor(df$true, levels = c("y","m","o"))
+  df$pred = factor(df$pred, levels = c("y","m","o"))
+  
+  # Have to create dataframe in this way because we want to answer the question:
+  # "from young cells, how many cells were predicted correctly as young and how many not "
+  y_predicted_y = which(result == "y") %in% which(pred == "y")
+  m_predicted_m = which(result == "m") %in% which(pred == "m")
+  o_predicted_o = which(result == "o") %in% which(pred == "o")
+  
+  # extract f1score
+  x = caret::confusionMatrix(result,pred,mode = "everything")
+  f1_score = data.frame(x = x$byClass[,"F1"])
+  f1_score = f1_score[c(3,1,2),] %>% as.data.frame
+  colnames(f1_score) = CT
+  rownames(f1_score) = c("F1 Young Age","F1 Middle Age","F1 Old Age")
+  
+  # extract precision
+  precision_score = data.frame(x = x$byClass[,"Precision"])
+  precision_score = precision_score[c(3,1,2),] %>% as.data.frame
+  colnames(precision_score) = CT
+  rownames(precision_score) = c("Precision Young Age","Precision Middle Age","Precision Old Age")
+  
+  # extract recall
+  recall_score = data.frame(x = x$byClass[,"Recall"])
+  recall_score = recall_score[c(3,1,2),] %>% as.data.frame
+  colnames(recall_score) = CT
+  rownames(recall_score) = c("Recall Young Age","Recall Middle Age","Recall Old Age")
+  
+  # combine all statistics
+  statistics[[CT]] = rbind(precision_score,recall_score,f1_score)
+  
+  # Standard deviation of the mean as error bar
+  fnc = function(y_predicted_y,m_predicted_m,o_predicted_o) {str_wrap(c(paste0("Young age ","(",length(y_predicted_y)," cells)"),
+                                                                       paste0("Middle age ","(",length(m_predicted_m)," cells)"),
+                                                                       paste0("Old age  ","(",length(o_predicted_o)," cells)")), width = 13, indent = 3, exdent = 0)}
+  
+  
+  # extract legend as figure
+  if(CT == "Neuroblast")
+  {
+    p <- ggplot(df, aes(x=true, y = pred, color = color, label = percentage)) + 
+      geom_point(aes(size=percentage)) +
+      labs(x ="Chronological age", y = "Predicted age") +
+      scale_x_discrete(labels = fnc(y_predicted_y,m_predicted_m,o_predicted_o), expand =c(0.1,0.10)) +
+      scale_y_discrete(labels=c("y" = "Young age", "m" = "Middle age ",
+                                "o" = "Old age ")) +
+      theme_minimal() +
+      ggtitle(CT) +
+      theme(plot.title = element_text(hjust = 0.5,size = 8)) +
+      geom_text(data = df[df$color == "Correctly predicted",] , hjust=0, vjust=2.5, size = 3, color = "black") +
+      coord_fixed(ratio = 1)
+    
+    legend = cowplot::get_legend(p)
+  }
+  
+  # add y axis once per row
+  if(CT %in% c("qNSC","Microglia","SMC"))
+  {
+    p <- ggplot(df, aes(x=true, y = pred, color = color, label = percentage)) + 
+      geom_point(aes(size=percentage),show.legend = FALSE) +
+      labs(x ="Chronological age", y = "Predicted age") +
+      scale_x_discrete(labels = fnc(y_predicted_y,m_predicted_m,o_predicted_o), expand =c(0.1,0.10)) +
+      scale_y_discrete(labels=c("y" = "Young age", "m" = "Middle age ",
+                                "o" = "Old age ")) +
+      theme_minimal() +
+      ggtitle(CT) +
+      theme(plot.title = element_text(hjust = 0.5,size=8)) +
+      geom_text(data = df[df$color == "Correctly predicted",] , hjust=0, vjust=2.5, size = 3, color = "black") +
+      coord_fixed(ratio = 1)
+  } else {
+    p <- ggplot(df, aes(x=true, y = pred, color = color, label = percentage)) + 
+      geom_point(aes(size=percentage),show.legend = FALSE) +
+      labs(x ="Chronological age") +
+      scale_x_discrete(labels = fnc(y_predicted_y,m_predicted_m,o_predicted_o), expand =c(0.275,0.275)) +
+      scale_y_discrete(labels=c("y" = "Young age", "m" = "Middle age ",
+                                "o" = "Old age ")) +
+      theme_minimal() +
+      ggtitle(CT) +
+      geom_text(data = df[df$color == "Correctly predicted",] , hjust=0, vjust=2.5, size = 3, color = "black") +
+      theme(plot.title = element_text(hjust = 0.5,size=8),
+            axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            axis.title.y = element_blank()) +
+      coord_fixed(ratio = 1)
+  }
+  
+  # generate plot
+  plots[[CT]] = p
+}
+
+########### SAVE ALL PLOTS IN THE SAME FIGURE
+x = ggpubr::ggarrange(plots$qNSC,plots$Neuroblast,plots$nIPC,plots$OPC,plots$Microglia,plots$Astrocyte,plots$Endothelial,
+                      plots$Pericyte,plots$SMC,plots$GC,plots$`Cajal-Retzius`,ggpubr::as_ggplot(legend) ,ncol = 4, nrow = 3)
+x
+tiff("precision_plots.tiff", units="in", width=12, height=11, res=300)
+x
+dev.off()
+
+############ SAVE INDIVIDUAL PLOTS AS TIFF
+dir.create("plots_prediction")
+setwd("plots_prediction/")
+for(plot in names(plots))
+{
+  tiff(paste0(plot,".tiff"), units="in", width=7, height=7, res=300)
+  print(plots[[plot]])
+  dev.off()
+}
+```
+
+# sessioninfo
+```{r }
+sessionInfo()
+```
