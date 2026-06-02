@@ -5,9 +5,11 @@
 > **DOI**: https://doi.org/10.1038/s41593-024-01848-4  
 > **GEO**: GSE233363  
 > **Plan version**: 3.0 (2026-06-02)  
-> **Status**: Read-only planning — no scripts created, no packages installed, no data downloaded
+> **Status**: Stage Spatial-01 implemented for DG/Hippo inspection; downstream spatial analysis not yet implemented
 
 > **Figures output convention**: All spatial figures use `figures/spatial/` (not `figures/stage-2/spatial/`). Rationale: AGENTS.md defines `figures/spatial/` as the spatial figures directory; `figures/stage-2/` is reserved for the scRNA-seq pipeline. Spatial analysis is a distinct pipeline branch and gets its own top-level spatial directory.
+
+> **Current spatial object scope**: Future implementation phases should focus on `seurat_Visium_DG_All.rds` and `seurat_Visium_Hippo_All.rds`. `seurat_Visium_WholeBrain.rds` is inventoried only and should not be loaded or analyzed for now because of memory risk and current project focus. WholeBrain work requires a separate user confirmation and plan update.
 
 ---
 
@@ -17,12 +19,14 @@
 
 | Path | Status |
 |------|--------|
-| `R/spatial/README.md` | Exists (scaffold only, no analysis scripts) |
+| `R/spatial/README.md` | Exists; Stage Spatial-01 inspection script implemented |
 | `docs/spatial_transcriptomics_overview.md` | Exists |
 | `docs/data_manifest_spatial.md` | Exists |
 | `docs/reference_sources.md` | Exists |
 | `docs/environment_renv_notes.md` | Exists |
-| `data/raw/spatial/` | Empty (no data files present) |
+| `data/raw/GSE233363_official/` | Contains author-provided official RDS files; current spatial focus is DG and Hippo |
+| `data/raw/spatial/` | Empty; retained as a future spatial-data convention, not the current canonical source |
+| `data/processed/spatial/inspection/` | Stage Spatial-01 inspection outputs for DG and Hippo |
 | `data/processed/neuro_processed.rds` | Exists (scRNA-seq, potential reference) |
 | `data/processed/neuro_with_ferroptosis_scores.rds` | Exists (scRNA-seq with scores) |
 | `docs/original_paper.pdf` | Exists |
@@ -64,9 +68,9 @@
 
 | Object | Source | Expected Path | Status |
 |--------|--------|---------------|--------|
-| `seurat_Visium_WholeBrain.rds` | Zenodo | `data/raw/spatial/` | Not downloaded |
-| `seurat_Visium_Hippo_All.rds` | Zenodo | `data/raw/spatial/` | Not downloaded |
-| `seurat_Visium_DG_All.rds` | Zenodo | `data/raw/spatial/` | Not downloaded |
+| `seurat_Visium_DG_All.rds` | Zenodo / author-provided | `data/raw/GSE233363_official/` | Available; inspected in Stage Spatial-01 |
+| `seurat_Visium_Hippo_All.rds` | Zenodo / author-provided | `data/raw/GSE233363_official/` | Available; inspected in Stage Spatial-01 |
+| `seurat_Visium_WholeBrain.rds` | Zenodo / author-provided | `data/raw/GSE233363_official/` | Available; inventoried only; do not load for now |
 | Raw Visium H5 files (16 samples) | Not on Zenodo | `data/raw/spatial/` | Not available |
 | Artifact CSVs per sample | Author code | `data/raw/spatial/` | Not available |
 | Hippocampus coordinate CSVs | Author code | `data/raw/spatial/` | Not available |
@@ -86,18 +90,19 @@
 ## Phase Spatial-01: Object Availability and First-Load Inspection
 
 ### Goal
-Load one Zenodo RDS object, record its full internal structure, and produce a lightweight text summary. No file copies of full Seurat objects.
+Inventory all author-provided spatial RDS objects, then inspect DG and Hippo sequentially with lightweight summaries. No file copies of full Seurat objects. WholeBrain remains inventoried only and is not loaded for now.
 
 ### Input Files
-- `data/raw/spatial/seurat_Visium_WholeBrain.rds` (or whichever arrives first)
+- `data/raw/GSE233363_official/seurat_Visium_DG_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_WholeBrain.rds` (inventory only; not loaded)
 
 ### Output Files / Directories
-- `data/processed/spatial/inspection_summary.txt` — text summary of object structure
-- `data/processed/spatial/metadata_columns.txt` — column names and types
-- `data/processed/spatial/assay_names.txt` — assay list and key names
-- `data/processed/spatial/image_info.txt` — spatial image names, keys, coordinate ranges
+- `data/processed/spatial/inspection/object_inventory.csv` — spatial object availability and inspection status
+- `data/processed/spatial/inspection/DG/` — lightweight DG inspection outputs
+- `data/processed/spatial/inspection/Hippo/` — lightweight Hippo inspection outputs
 
-### Scripts to Create Later
+### Scripts
 - `R/spatial/s01_inspect_objects.R`
 
 ### Dependencies to Verify
@@ -115,32 +120,32 @@ Load one Zenodo RDS object, record its full internal structure, and produce a li
 - Load one object at a time
 - Call `gc()` immediately after inspection
 - Do NOT load all three RDS simultaneously
+- Do NOT load WholeBrain in current phases; it remains inventory-only until a separate user confirmation and plan update
 
 ### Stop Conditions
-- If RDS fails to load (corrupt download): re-download from Zenodo
+- If DG or Hippo RDS fails to load: stop, record the error, and do not automatically try WholeBrain
 - If no spatial image slot found: object may be pre-processed differently than expected
 - If assay names differ from author code: record discrepancy, continue
+- If WholeBrain is requested without explicit confirmation: stop
 
 ---
 
 ## Phase Spatial-02: Reproduce Author Spatial Preprocessing / Object-Derived Metadata
 
 ### Goal
-Reproduce the metadata and clustering structure described in Script 6, using the Zenodo RDS objects (not raw H5). Verify that age groups, regional annotations, and hippocampal subsetting match the author's reported structure.
+Reproduce the metadata and clustering structure relevant to DG and Hippo as described in Script 6, using the author-provided RDS objects (not raw H5). Verify that age groups, regional annotations, and hippocampal/DG subsetting match the author's reported structure. WholeBrain is out of scope for now.
 
 ### Input Files
-- `data/raw/spatial/seurat_Visium_WholeBrain.rds`
-- `data/raw/spatial/seurat_Visium_Hippo_All.rds`
-- `data/raw/spatial/seurat_Visium_DG_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_DG_All.rds`
 - `docs/original_code_from_paper/Scripts/R/6. Spatial-Data process.R` (reference only)
 
 ### Output Files / Directories
-- `data/processed/spatial/wholebrain_metadata_summary.csv` — age group counts, cluster counts, region counts
 - `data/processed/spatial/hippo_metadata_summary.csv` — hippocampal subregion counts
 - `data/processed/spatial/dg_metadata_summary.csv` — DG spot counts by age
 
 ### Scripts to Create Later
-- `R/spatial/s02_wholebrain_qc_and_metadata.R`
+- `R/spatial/s02_dg_hippo_metadata.R`
 
 ### Dependencies to Verify
 - Seurat v5.5.0
@@ -148,18 +153,20 @@ Reproduce the metadata and clustering structure described in Script 6, using the
 - `ggplot2` for basic QC plots
 
 ### Validation Checks
-- Spot counts per age group match paper (42,169 total; Young/Middle/Old)
-- 6 regional identities present (Midbrain, Thalamus, Cortex, White_matter, Hippocampus, Hypothalamus)
-- Hippocampus subregions: ML, GCL, Hilus, CA1, CA2, CA3
+- DG and Hippo spot counts per age group match Stage Spatial-01 inspection and author-reported object structure
+- DG regions present: ML, GCL, Hilus
+- Hippo subregions present: ML, GCL, Hilus, CA1, CA2, CA3
 - QC metrics: percentMito (`^mt-`), percentRibo (`^Rps|^Rpl`)
 
 ### Memory Cautions
-- Load WholeBrain first (largest); gc() before loading Hippo
-- After object inspection and official Seurat documentation review, consider memory-light object handling if needed (e.g., `DietSeurat()` per Seurat v5 docs, or load Hippo/DG only)
+- Load DG and Hippo sequentially, not together
+- Do not load WholeBrain in Phase Spatial-02
+- After object inspection and official Seurat documentation review, consider memory-light object handling if needed
 
 ### Stop Conditions
 - If metadata columns don't match expected names: record all column names, continue with available columns
 - If spot counts differ significantly (>10%): record discrepancy, check if Middle timepoint included
+- If a requested action requires WholeBrain: stop and request a separate WholeBrain-specific confirmation and plan update
 
 ---
 
@@ -169,7 +176,7 @@ Reproduce the metadata and clustering structure described in Script 6, using the
 Reproduce the pseudobulk DESeq2 analysis from Script 7, comparing Old vs Young (and optionally Middle vs Young) in hippocampal subregions.
 
 ### Input Files
-- `data/raw/spatial/seurat_Visium_Hippo_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
 - `docs/original_code_from_paper/Scripts/R/7. Spatial-DESeq2.R` (reference only)
 
 ### Output Files / Directories
@@ -207,7 +214,7 @@ Reproduce the pseudobulk DESeq2 analysis from Script 7, comparing Old vs Young (
 Reproduce the IFNγ response module score and inflammatory spot (IS) identification from Script 8, using the Hippo_All.rds object.
 
 ### Input Files
-- `data/raw/spatial/seurat_Visium_Hippo_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
 - `docs/original_code_from_paper/Scripts/R/8. Spatial-Inflammatory gradient.R` (reference only)
 - `msigdbr` package (for HALLMARK_INTERFERON_GAMMA_RESPONSE gene set)
 
@@ -245,7 +252,7 @@ Reproduce the IFNγ response module score and inflammatory spot (IS) identificat
 Reproduce the inflammatory gradient analysis from Script 8, including the distance-based spatial hierarchy (IS → NNS → ENS1 → ENS2) and pseudotime trajectory.
 
 ### Input Files
-- `data/raw/spatial/seurat_Visium_Hippo_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
 - `data/processed/spatial/is_nns_ens_labels.csv` (from Phase Spatial-04)
 - `docs/original_code_from_paper/Scripts/R/8. Spatial-Inflammatory gradient.R` (reference only)
 
@@ -285,7 +292,7 @@ Reproduce the Tangram cell-type deconvolution from the Python notebook, projecti
 
 ### Input Files
 - `data/processed/neuro_processed.rds` (scRNA-seq reference)
-- `data/raw/spatial/seurat_Visium_DG_All.rds` (or Hippo_All.rds)
+- `data/raw/GSE233363_official/seurat_Visium_DG_All.rds` (or `seurat_Visium_Hippo_All.rds`)
 - `docs/original_code_from_paper/Scripts/Python/notebook_tangram.ipynb` (reference only)
 
 ### Output Files / Directories

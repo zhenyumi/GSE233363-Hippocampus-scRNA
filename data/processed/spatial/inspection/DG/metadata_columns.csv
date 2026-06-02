@@ -1,0 +1,14 @@
+"column","class","n_unique","is_categorical","skipped_levels"
+"orig.ident","character",1,TRUE,FALSE
+"nCount_Spatial","numeric",2295,FALSE,TRUE
+"nFeature_Spatial","integer",1956,FALSE,TRUE
+"nCount_SCT","numeric",2178,FALSE,TRUE
+"nFeature_SCT","integer",1839,FALSE,TRUE
+"Region","factor",3,TRUE,FALSE
+"GEMgroup","factor",16,TRUE,FALSE
+"Position","character",2,TRUE,FALSE
+"Age","factor",3,TRUE,FALSE
+"percentMito","numeric",2364,FALSE,TRUE
+"percentRibo","numeric",2362,FALSE,TRUE
+"SCT_snn_res.1","factor",9,TRUE,FALSE
+"seurat_clusters","factor",9,TRUE,FALSE

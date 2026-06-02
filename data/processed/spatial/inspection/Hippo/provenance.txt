@@ -1,0 +1,22 @@
+=== Provenance: seurat_Visium_Hippo_All.rds ===
+File path: /Users/zhangzhenzhen/Documents/Claude_Gemini_Code/bio/Bioinformatics_scRNA_Thesis/data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds
+File size: 1302821630 bytes ( 1302.8 MB)
+File mtime: 2026-05-29 12:56:20.717228
+Expected MD5: b87a53ea521a546e22a91bb2fdaff041
+Actual MD5: NOT COMPUTED
+
+Dataset: GSE233363 Official Author-Provided Data
+Source: Zenodo
+Zenodo DOI: 10.5281/zenodo.13893852
+Paper DOI: 10.1038/s41593-024-01848-4
+GitHub: https://github.com/JessbergerLab/AgingNeurogenesis_Transcriptomics
+Species: Mus musculus
+Technology: 10x Genomics Chromium (scRNA-seq)
+Technology: 10x Visium (spatial transcriptomics)
+Description: Official Seurat RDS objects provided by the paper authors, containing preprocessed and annotated data for both single-cell RNA-seq and spatial transcriptomics of young, middle, and old mouse hippocampal dentate gyrus.
+Downloaded date: 2026-05-29
+
+Seurat version loaded: 5.5.0
+R version: R version 4.5.1 (2025-06-13)
+Loaded from: /Users/zhangzhenzhen/Documents/Claude_Gemini_Code/bio/Bioinformatics_scRNA_Thesis/data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds
+Inspection date: 2026-06-02 17:56:41.583078

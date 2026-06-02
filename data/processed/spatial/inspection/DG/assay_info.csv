@@ -1,0 +1,3 @@
+"assay","class","n_features","layers","counts_status","data_status","scale_data_status"
+"Spatial","Assay",32285,"counts, data, scale.data","present","present","present"
+"SCT","SCTAssay",15264,"counts, data, scale.data","present","present","present"

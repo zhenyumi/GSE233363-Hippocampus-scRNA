@@ -1,0 +1,4 @@
+"reduction","class","n_cells","n_dimensions"
+"pca","DimReduc",2364,50
+"umap","DimReduc",2364,2
+"tsne","DimReduc",2364,2

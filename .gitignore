@@ -22,6 +22,8 @@ renv/
 ._*
 
 # === Spatial transcriptomics (future) ===
+data/processed/spatial/*.csv
+data/processed/spatial/*.txt
 results/
 cache/
 reports/

@@ -1,0 +1,16 @@
+=== Seurat Visium DG Inspection Summary ===
+Date: 2026-06-02 17:56:20.776302
+
+Seurat version: 5.5.0
+Class: Seurat
+Dimensions: 32285 genes x 2364 spots
+Default assay: Spatial
+All assays: Spatial, SCT
+Spatial images: slice1, slice1_2, slice1_3, slice1_4, slice1_5, slice1_6, slice1_7, slice1_8, slice1_9, slice1_10, slice1_11, slice1_12, slice1_13, slice1_14, slice1_15, slice1_16
+Reductions: pca, umap, tsne
+
+--- str() output (max.level=1, list.len=20) ---
+Formal class 'Seurat' [package "SeuratObject"] with 13 slots
+
+--- slotNames() ---
+assays, meta.data, active.assay, active.ident, graphs, neighbors, reductions, images, project.name, misc, version, commands, tools
