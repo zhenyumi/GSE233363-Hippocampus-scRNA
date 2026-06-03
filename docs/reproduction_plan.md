@@ -356,9 +356,10 @@ gene_lists/
 ### 11.3 预期但未验证的数据来源
 
 - **来源**: JessbergerLab / Wu et al. / GSE233363
-- **预期**: 作者提供的空间 RDS 对象（seurat_Visium_DG_All.rds, seurat_Visium_Hippo_All.rds, seurat_Visium_WholeBrain.rds）
-- **状态**: 未验证 — 文件路径、大小、内容均需在获取后确认
-- **约束**: 不在脚手架阶段下载或假设数据内容
+- **当前输入**: `data/raw/GSE233363_official/` 中的作者提供空间 RDS 对象（seurat_Visium_DG_All.rds, seurat_Visium_Hippo_All.rds, seurat_Visium_WholeBrain.rds）
+- **状态**: DG 和 Hippo 已完成 Stage Spatial-01/02 检查；WholeBrain 仅清点，不在当前阶段加载
+- **raw Visium 状态**: 作者 Script 8 的 STutility 段需要 `filtered_feature_bc_matrix.h5`、`tissue_positions_list.csv`、`tissue_hires_image.png`、`scalefactors_json.json` 等外部 raw Visium/Space Ranger 文件；这些文件当前本地不可用
+- **当前路线决策**: Phase Spatial-05 改为基于作者 RDS 中已检查到的 image slots 和坐标进行 RDS-based reproduction/approximation。该路线必须明确标注为近似复现，不能报告为严格作者代码复现。
 
 ### 11.4 脚手架步骤
 
@@ -386,3 +387,4 @@ gene_lists/
 - **不在 gitignore 目录中创建 .gitkeep 文件**
 - 工具/方法选择须先经过 ref-bio 参考路由和实际对象结构检查，不在本脚手架阶段预设
 - **Visium-only**（无 MERFISH、Slide-seq、HD 占位符）
+- 如果使用 RDS 替代 raw Visium 文件推进后续空间邻域分析，必须记录与作者 STutility 路线的偏离点，并保留将来找到 raw 文件后重开严格复现分支的可能性

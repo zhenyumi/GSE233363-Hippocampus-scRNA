@@ -4,12 +4,14 @@
 > **Source paper**: Wu et al. (2025) *Nature Neuroscience* 28:415–430  
 > **DOI**: https://doi.org/10.1038/s41593-024-01848-4  
 > **GEO**: GSE233363  
-> **Plan version**: 3.0 (2026-06-02)  
-> **Status**: Stage Spatial-01 implemented for DG/Hippo inspection; downstream spatial analysis not yet implemented
+> **Plan version**: 3.1 (2026-06-03)  
+> **Status**: Stages Spatial-01 through Spatial-04 implemented for DG/Hippo. Phase Spatial-05 is now planned as an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available.
 
 > **Figures output convention**: All spatial figures use `figures/spatial/` (not `figures/stage-2/spatial/`). Rationale: AGENTS.md defines `figures/spatial/` as the spatial figures directory; `figures/stage-2/` is reserved for the scRNA-seq pipeline. Spatial analysis is a distinct pipeline branch and gets its own top-level spatial directory.
 
 > **Current spatial object scope**: Future implementation phases should focus on `seurat_Visium_DG_All.rds` and `seurat_Visium_Hippo_All.rds`. `seurat_Visium_WholeBrain.rds` is inventoried only and should not be loaded or analyzed for now because of memory risk and current project focus. WholeBrain work requires a separate user confirmation and plan update.
+
+> **Phase Spatial-05 route decision**: The author's Script 8 uses external raw Visium/Space Ranger files with `STutility::InputFromTable()`, `LoadImages()`, and `RegionNeighbours()`. Those files are not available locally, while the author-provided Hippo/DG Seurat RDS objects already contain `VisiumV1` image slots and spot coordinates. Therefore Phase Spatial-05 should proceed as an **RDS-based reproduction/approximation** using the inspected Seurat objects. This route must be labeled as an approximation and must not be reported as a strict author-code reproduction of the STutility section. If raw Visium files are later found, restore a separate strict-author-code plan.
 
 ---
 
@@ -37,7 +39,7 @@
 |--------|------|-------|----------------|
 | Script 6 | `docs/original_code_from_paper/Scripts/R/6. Spatial-Data process.R` | 933 | Raw H5 → SCTransform → merge → cluster → annotate → subset Hippo/DG → Allen Atlas |
 | Script 7 | `docs/original_code_from_paper/Scripts/R/7. Spatial-DESeq2.R` | 326 | Pseudobulk DESeq2 on Hippo_All.rds |
-| Script 8 | `docs/original_code_from_paper/Scripts/R/8. Spatial-Inflammatory gradient.R` | 993 | IFNγ module score, Edge detection, STutility RegionNeighbours, gradient DESeq2 |
+| Script 8 | `docs/original_code_from_paper/Scripts/R/8. Spatial-Inflammatory gradient.R` | 993 | IFNγ module score, Edge detection, STutility RegionNeighbours, gradient DESeq2. Lines 71-697 require external raw Visium files; current Phase Spatial-05 will approximate this section from the Hippo RDS coordinates. |
 | Tangram | `docs/original_code_from_paper/Scripts/Python/notebook_tangram.ipynb` | — | Cell-type deconvolution to Visium spots |
 
 ### Paper PDF Spatial Figures / Methods Targets
@@ -71,18 +73,18 @@
 | `seurat_Visium_DG_All.rds` | Zenodo / author-provided | `data/raw/GSE233363_official/` | Available; inspected in Stage Spatial-01 |
 | `seurat_Visium_Hippo_All.rds` | Zenodo / author-provided | `data/raw/GSE233363_official/` | Available; inspected in Stage Spatial-01 |
 | `seurat_Visium_WholeBrain.rds` | Zenodo / author-provided | `data/raw/GSE233363_official/` | Available; inventoried only; do not load for now |
-| Raw Visium H5 files (16 samples) | Not on Zenodo | `data/raw/spatial/` | Not available |
-| Artifact CSVs per sample | Author code | `data/raw/spatial/` | Not available |
+| Raw Visium H5 files (16 samples) | Not on Zenodo / not found locally | `data/raw/spatial/` | Not available; required only for strict STutility route |
+| Space Ranger spatial files (`tissue_positions*`, hires image, scalefactors JSON) | Author code | `data/raw/spatial/` | Not available; required only for strict STutility route |
 | Hippocampus coordinate CSVs | Author code | `data/raw/spatial/` | Not available |
 | `neuro_processed.rds` | Stage-2 pipeline | `data/processed/` | Exists |
 | `neuro_with_ferroptosis_scores.rds` | Stage-2 pipeline | `data/processed/` | Exists |
 
 ### Unknowns / Gaps
 
-1. **Zenodo RDS internal structure**: DefaultAssay, metadata columns, spatial keys, image slots — all unverified until first load
+1. **Zenodo RDS internal structure**: DG and Hippo have now been inspected in Stages Spatial-01 and Spatial-02. Both contain `VisiumV1` image slots and spot coordinates. WholeBrain remains inventory-only.
 2. **Author uses Seurat v4.3; project uses v5.5.0**: Assay naming (`Spatial` vs `Spatial.01`) and SCT slot behavior may differ
-3. **STutility package**: Used in author Script 8 for `RegionNeighbours`, but **not mentioned in paper Methods**. Paper describes distance-based hierarchy and Monocle 2 pseudotime instead. To verify before implementation.
-4. **Raw Visium H5 + CSV files**: Not available from Zenodo; full reprocessing from raw requires these files
+3. **STutility package and raw inputs**: Used in author Script 8 for `RegionNeighbours`, but the required external raw Visium files are not currently available. Current Phase Spatial-05 should not install/use STutility unless raw files are found.
+4. **Raw Visium H5 + spatial files**: Not available locally; strict author-code STutility reproduction requires these files.
 5. **Tangram**: Paper uses v1.0.4 + scanpy 1.10.1 + CUDA; requires separate Python environment (not planned here)
 
 ---
@@ -246,42 +248,55 @@ Reproduce the IFNγ response module score and inflammatory spot (IS) identificat
 
 ---
 
-## Phase Spatial-05: Reproduce Inflammatory Gradient Neighborhood Analysis
+## Phase Spatial-05: RDS-Based Inflammatory Gradient Approximation
 
 ### Goal
-Reproduce the inflammatory gradient analysis from Script 8, including the distance-based spatial hierarchy (IS → NNS → ENS1 → ENS2) and pseudotime trajectory.
+Approximate the inflammatory gradient neighborhood analysis from Script 8 using the author-provided `seurat_Visium_Hippo_All.rds`, its inspected image slots/coordinates, and the Phase Spatial-04 `FuncRegion` handoff. This phase should reproduce as much of the author/paper result as possible from RDS-contained spatial data, while explicitly recording deviations from the strict STutility/raw-file route.
+
+This phase is **not** a strict author-code reproduction of Script 8 lines 71-697 because the required raw Visium/Space Ranger inputs are unavailable. Any output from this phase must be labeled **RDS-based approximation**.
 
 ### Input Files
 - `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
-- `data/processed/spatial/is_nns_ens_labels.csv` (from Phase Spatial-04)
+- `data/processed/spatial/phase04_ifng_module/metadata_hippo_func_region.csv` (from Phase Spatial-04; current Phase 04 status is WARNING and requires explicit user acknowledgement before use)
 - `docs/original_code_from_paper/Scripts/R/8. Spatial-Inflammatory gradient.R` (reference only)
+- `data/processed/spatial/inspection/Hippo/spatial_info.csv` and Phase Spatial-02 metadata summaries (for validated image/coordinate expectations)
 
 ### Output Files / Directories
-- `data/processed/spatial/gradient_metadata.csv` — IS/NNS/ENS1/ENS2 labels with coordinates
-- `data/processed/spatial/gradient_deseq2_results.csv` — DESeq2 results for gradient comparison
-- `figures/spatial/gradient_pseudotime.pdf` — pseudotime trajectory plots
-- `figures/spatial/gradient_modules_spatial.pdf` — spatial visualization of gene modules
+- `data/processed/spatial/phase05_rds_gradient/` - lightweight metadata, neighbor labels, validation tables, and provenance
+- `figures/spatial/phase05/` - diagnostic plots and paper-comparison figures
+
+Exact file names must be defined in the Phase Spatial-05 pre-execution plan after reviewing the inspected RDS coordinate structure and official Seurat spatial documentation.
 
 ### Scripts to Create Later
-- `R/spatial/s05_inflammatory_gradient.R`
+- `R/spatial/s05_rds_inflammatory_gradient.R`
 
 ### Dependencies to Verify
-- `STutility` — **NOT mentioned in paper Methods**. Author code uses `RegionNeighbours()` for neighbor identification. Paper describes distance-based hierarchy and Monocle 2 pseudotime instead. **To verify before implementation**: check if STutility is the correct package or if paper's described method uses a different approach.
-- `Monocle 2` — paper mentions this for pseudotime construction
-- `DESeq2` for gradient DE comparisons
+- `Seurat` - load Hippo RDS, access metadata, images, and coordinates
+- `DESeq2` and `Matrix.utils` - only if the RDS-based phase includes the Script 8 gradient pseudobulk DESeq2 section
+- `ggplot2` / existing plotting packages - for diagnostic and paper-comparison figures
+- `STutility` - **not required for the current RDS-based route**. Do not install it for Phase Spatial-05 unless raw Visium files are later found and a strict STutility branch is explicitly approved.
+- `Monocle 2` - **not required for the current RDS-based route** unless a separate paper-methods branch is explicitly approved.
 
 ### Validation Checks
-- IS spots CAS-Up scores compared against paper Extended Data Fig. 9i panels and author Script 8 outputs
-- Gene modules 1-4 spatial patterns compared against paper Fig. 7f panels and author Script 8 outputs
-- Gradient DEGs compared against author Script 8 output gene lists and paper Extended Data Fig. 9b-d panels
+- Confirm Phase Spatial-04 WARNING handoff has explicit user acknowledgement before consuming `metadata_hippo_func_region.csv`
+- Confirm the Hippo RDS still has 16 images and 9921 spots before neighborhood approximation
+- Confirm coordinate extraction is performed per image/sample, not across all images as one shared coordinate plane
+- Compare RDS-derived IS/NNS/ENS-like counts against author Script 8 comments where available
+- Compare resulting patterns against paper Fig. 7 and Extended Data Fig. 9 as qualitative/quantitative approximation, not strict equivalence
+- Record all deviations from author Script 8, especially lack of external raw image files and lack of STutility `RegionNeighbours()`
 
 ### Memory Cautions
-- Neighborhood computation may be memory-intensive for large objects
-- Process one age group at a time if needed
+- Load only `seurat_Visium_Hippo_All.rds`; do not load DG, WholeBrain, or Chromium in this phase unless a later plan explicitly requires it
+- Work per image/sample where possible
+- Save lightweight metadata/CSV outputs; do not save modified full Seurat objects
+- Preserve sparse matrices and avoid dense conversion of spot-level count matrices
 
 ### Stop Conditions
-- If STutility is required by author code but not installed: **stop**, document the discrepancy between author code (`RegionNeighbours`) and paper Methods (distance-based hierarchy), and request user decision. Do not substitute an alternative package on the reproduction path. Any alternative method (e.g., custom distance-based implementation) must be proposed as a separate **future exploratory branch**, not merged into the reproduction pipeline.
-- If Monocle 2 is not available in the current R environment: **stop**, document the missing dependency, and request user decision. Do not substitute Monocle 3 or any other trajectory method on the reproduction path. Any alternative trajectory tool must be proposed as a separate **future exploratory branch**.
+- If Phase Spatial-04 handoff status is FAIL: stop; do not run Phase Spatial-05.
+- If Phase Spatial-04 handoff status is WARNING and user acknowledgement is not documented: stop and request confirmation.
+- If Hippo RDS lacks image slots or coordinates at runtime: stop and report that RDS-based approximation cannot proceed.
+- If neighborhood labels cannot be derived per image without guessing coordinate systems or sample IDs: stop and request user decision.
+- If the implementation starts to require raw Visium files or STutility behavior that cannot be reproduced from the RDS: stop and document the boundary rather than silently substituting.
 
 ---
 
@@ -413,12 +428,12 @@ Phases 03 and 04 can run in parallel after Phase 02 completes.
 | `osta` | OSTA | https://bioconductor.org/books/release/OSTA/ | must_read |
 | `seurat` | Seurat v5 | https://satijalab.org/seurat/ | must_read |
 | `deseq2` | DESeq2 | https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html | must_read |
-| `stutility` | STutility | https://github.com/jbergenstrahle/STutility | to_verify |
+| `stutility` | STutility | https://github.com/jbergenstrahle/STutility | strict_raw_route_only |
 | `visium` | 10x Visium | https://www.10xgenomics.com/products/spatial-gene-expression | optional_read |
 | `spatialexperiment` | SpatialExperiment | https://bioconductor.org/packages/release/bioc/html/SpatialExperiment.html | optional_read |
 | `tangram` | Tangram | https://github.com/broadinstitute/Tangram | optional_read |
 
-**Note**: STutility reference URL is from the author's GitHub. The paper Methods section does not mention STutility — it describes distance-based hierarchy and Monocle 2 pseudotime instead. This discrepancy must be verified before implementation.
+**Note**: STutility reference URL is from the author's GitHub. The author Script 8 STutility section requires external raw Visium files that are not currently available. Current Phase Spatial-05 is an RDS-based approximation and should consult STutility only to document the strict-route discrepancy, not to implement the current route.
 
 ---
 
@@ -427,8 +442,8 @@ Phases 03 and 04 can run in parallel after Phase 02 completes.
 1. **Data download timing**: When should Zenodo RDS files be downloaded? Before Phase 01 or as needed?
 2. **Tangram requirement**: Is Tangram output needed for any target figure? If not, Phase 06 can be skipped.
 3. **Middle timepoint**: Paper includes Middle-aged group. Author code compares OY, MY, OM. Should Middle be included in reproduction?
-4. **Full reprocessing vs Zenodo RDS**: Zenodo provides pre-processed objects. Full reprocessing from raw H5 requires files not available from Zenodo. Which approach?
-5. **STutility dependency**: Author code uses STutility::RegionNeighbours() but paper doesn't mention it. Should we install STutility or implement the paper's described distance-based approach?
+4. **Full reprocessing vs Zenodo RDS**: Current decision is to proceed with RDS-based approximation because raw Visium/Space Ranger files are not available. Revisit only if those files are found.
+5. **STutility dependency**: Current decision is not to install/use STutility for Phase Spatial-05. A strict STutility branch can be reopened only if raw Visium files are found.
 
 ---
 
@@ -442,8 +457,8 @@ Phases 03 and 04 can run in parallel after Phase 02 completes.
 | SCTransform | Phase 02 | To verify | 02 |
 | DESeq2 | Phases 03, 05 | To verify | 03, 05 |
 | msigdbr | Phase 04 | To verify | 04 |
-| STutility | Phase 05 | To verify (see Open Q5) | 05 |
-| Monocle 2 | Phase 05 | To verify | 05 |
+| STutility | Strict raw-file branch only | Not required for current RDS-based Phase 05 | 05 optional/future |
+| Monocle 2 | Paper-methods branch only | Not required for current RDS-based Phase 05 | 05 optional/future |
 | ggplot2 | All visualization | To verify (check renv.lock) | All |
 | pheatmap | Heatmaps | To verify | 03 |
 | Matrix | aggregate.Matrix | To verify (check renv.lock) | 03 |

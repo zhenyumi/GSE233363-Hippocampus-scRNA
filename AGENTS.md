@@ -86,16 +86,17 @@ Rscript run_pipeline.R
 - Memory: call `gc()` after large operations
 
 ## Spatial Transcriptomics Extension (Phase Spatial-00)
-**Status**: SCAFFOLD ONLY — no analysis implemented yet.
+**Status**: Scaffold plus Stages Spatial-01 through Spatial-04 implemented for DG/Hippo. Phase Spatial-05 is planned next as RDS-based reproduction/approximation.
 
 ### Key Distinctions
 - **scRNA-seq cells ≠ Visium spots**: Visium spots may capture signal from multiple cells and are not equivalent to single cells.
 - **Spots are not independent biological replicates**: spatial neighbors share local microenvironment
 - **Metadata must be inspected from actual objects**: do not assume assay names, spatial keys, image slots, or anatomical labels
 - **Consult .opencode/skills/ref-bio/ for authoritative reference routing** when planning methods
+- **Route labels matter**: if raw Space Ranger/Visium files are unavailable and analysis uses author-provided Seurat RDS image slots/coordinates instead, label the work as RDS-based reproduction/approximation, not strict author-code reproduction.
 
 ### Data Paths (expected, unverified)
-- Spatial input: `data/raw/spatial/` (gitignored, user must supply Visium RDS files)
+- Spatial input: `data/raw/GSE233363_official/` for current author-provided RDS objects; `data/raw/spatial/` is reserved for future raw Space Ranger/Visium files if they are found
 - Processed spatial: `data/processed/spatial/` (gitignored, generated)
 - Spatial figures: `figures/spatial/` (gitignored, generated)
 - Spatial scripts: `R/spatial/` (tracked, `s##_` prefix)
@@ -107,9 +108,17 @@ Rscript run_pipeline.R
 
 ### Memory Constraints (macOS 16GB)
 - Load one spatial object at a time
+- Current spatial focus is DG and Hippo; do not load WholeBrain unless a separate user-approved plan says to do so
 - Use lightweight summaries, not duplicate RDS copies
 - Call `gc()` after large operations
 - Memory management specifics deferred to official Seurat docs and actual object structure
+
+### Current Spatial Reproduction Route
+- Stages Spatial-01 through Spatial-04 use author-provided RDS objects from `data/raw/GSE233363_official/`.
+- Raw Visium/Space Ranger files required by the author's STutility section in Script 8 are not currently available.
+- Phase Spatial-05 should therefore be planned as RDS-based reproduction/approximation using the inspected `seurat_Visium_Hippo_All.rds` image slots and coordinates.
+- Do not install or require STutility for the current RDS-based Phase Spatial-05 unless raw Visium files are later found and the user explicitly approves reopening a strict raw-file branch.
+- Phase Spatial-04 completed with WARNING; use of `metadata_hippo_func_region.csv` for Phase Spatial-05 requires explicit user acknowledgement.
 
 ### Reference Routing
 - Project-specific refs (paper, GitHub, GEO, Zenodo): see `docs/reference_sources.md`
