@@ -7,6 +7,13 @@
 
 ## 2. 数据来源与 Seurat Object 区分
 
+### 2.0 当前仓库结构说明
+
+- 当前维护的 scRNA-seq 复现脚本位于 `R/scrna/01_load_and_subset.R` 到 `R/scrna/05_correlation_heatmaps.R`。
+- `run_pipeline.R` 是 scRNA-seq 分支的入口。
+- `analysis/` 目录已退役；不要在其中新增脚本或输出。
+- 仓库结构规范见 `docs/repository_structure.md`。
+
 ### 2.1 涉及的 Seurat Object
 
 | 文件名 | 来源 | 用途 | 是否需要 |
@@ -18,7 +25,7 @@
 ### 2.2 关键说明
 
 - 用户提供的 `Seurat_combined_with_Celltype_Article.rds` 是**独立从 FASTQ 比对**的结果，与原文章作者提供的数据处理流程可能有差异
-- 原始仓库代码中 `analysis/stage-2/` 的脚本只使用 `Seurat_combined_with_Celltype_Article.rds`
+- 上游 ferroDG 原始仓库曾使用 `analysis/stage-2/` 路径；本仓库的当前实现已整理为 `R/scrna/01_*` 到 `R/scrna/05_*`，并使用 `Seurat_combined_with_Celltype_Article.rds`
 - 本复现**不涉及阶段一**（标签迁移/QC/去双细胞），直接从已标注的 Seurat object 开始
 
 ## 3. 系统环境
@@ -46,7 +53,7 @@ Seurat v5 的主要变化：
 
 ## 4. 复现范围
 
-复现 `analysis/stage-2/Step1-New_Cell_Group.R`（797 行），生成 Fig 0-7：
+复现上游 `analysis/stage-2/Step1-New_Cell_Group.R`（797 行）的阶段二逻辑；当前仓库实现位于 `R/scrna/01_*` 到 `R/scrna/05_*`，生成 Fig 0-7：
 
 | 图表 | 描述 | 关键函数 |
 |------|------|----------|
@@ -122,11 +129,11 @@ print(key_genes %in% rownames(obj))
 按顺序执行拆分后的脚本：
 
 ```
-R/01_load_and_subset.R      → data/processed/neuro_processed.rds
-R/02_module_scores.R         → data/processed/neuro_with_ferroptosis_scores.rds
-R/03_figures_0_to_4.R        → figures/stage-2/Fig0-4*.png + .pdf
-R/04_de_and_volcano.R        → figures/stage-2/Fig5*.png + .pdf + CSV
-R/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
+R/scrna/01_load_and_subset.R      → data/processed/neuro_processed.rds
+R/scrna/02_module_scores.R         → data/processed/neuro_with_ferroptosis_scores.rds
+R/scrna/03_figures_0_to_4.R        → figures/stage-2/Fig0-4*.png + .pdf
+R/scrna/04_de_and_volcano.R        → figures/stage-2/Fig5*.png + .pdf + CSV
+R/scrna/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
 ```
 
 ### Step 4: 输出验证
@@ -138,7 +145,7 @@ R/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
 
 ## 6. 脚本详细设计
 
-### 6.1 `R/01_load_and_subset.R`
+### 6.1 `R/scrna/01_load_and_subset.R`
 
 **输入**: `data/raw/GSE233363_custom/Seurat_combined_with_Celltype_Article.rds`
 **输出**: `data/processed/combined_processed.rds`, `data/processed/neuro_processed.rds`
@@ -161,7 +168,7 @@ R/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
 - 使用 `gc()` 在子集化后释放内存
 - 保存中间对象后释放 `combined`（`rm(combined); gc()`）
 
-### 6.2 `R/02_module_scores.R`
+### 6.2 `R/scrna/02_module_scores.R`
 
 **输入**: `data/processed/neuro_processed.rds`
 **输出**: `data/processed/neuro_with_ferroptosis_scores.rds`, `gene_lists/`
@@ -188,7 +195,7 @@ R/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
 - `set.seed(1)` 确保可重复性
 - 使用 `gc()` 在计算后释放内存
 
-### 6.3 `R/03_figures_0_to_4.R`
+### 6.3 `R/scrna/03_figures_0_to_4.R`
 
 **输入**: `data/processed/neuro_with_ferroptosis_scores.rds`
 **输出**: `figures/stage-2/Fig0*.png/pdf`, `Fig1*.png/pdf`, `Fig2*.png/pdf`, `Fig3*.png/pdf`, `Fig4*.png/pdf`
@@ -216,7 +223,7 @@ R/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
 - 每个图保存后调用 `gc()`
 - 使用 `save_plot_local()` helper 统一保存
 
-### 6.4 `R/04_de_and_volcano.R`
+### 6.4 `R/scrna/04_de_and_volcano.R`
 
 **输入**: `data/processed/neuro_with_ferroptosis_scores.rds`
 **输出**: `figures/stage-2/Fig5_*.png/pdf`, `data/processed/DE_results_*.csv`
@@ -240,7 +247,7 @@ R/05_correlation_heatmaps.R  → figures/stage-2/Fig6-7*.png + .pdf
 - DE 结果保存为 CSV 后释放内存
 - 这是最耗时的步骤，可能需要 5-10 分钟
 
-### 6.5 `R/05_correlation_heatmaps.R`
+### 6.5 `R/scrna/05_correlation_heatmaps.R`
 
 **输入**: `data/processed/neuro_with_ferroptosis_scores.rds`
 **输出**: `figures/stage-2/Fig6*.png/pdf`, `Fig7*.png/pdf`
@@ -359,7 +366,9 @@ gene_lists/
 - **当前输入**: `data/raw/GSE233363_official/` 中的作者提供空间 RDS 对象（seurat_Visium_DG_All.rds, seurat_Visium_Hippo_All.rds, seurat_Visium_WholeBrain.rds）
 - **状态**: DG 和 Hippo 已完成 Stage Spatial-01/02 检查；WholeBrain 仅清点，不在当前阶段加载
 - **raw Visium 状态**: 作者 Script 8 的 STutility 段需要 `filtered_feature_bc_matrix.h5`、`tissue_positions_list.csv`、`tissue_hires_image.png`、`scalefactors_json.json` 等外部 raw Visium/Space Ranger 文件；这些文件当前本地不可用
-- **当前路线决策**: Phase Spatial-05 改为基于作者 RDS 中已检查到的 image slots 和坐标进行 RDS-based reproduction/approximation。该路线必须明确标注为近似复现，不能报告为严格作者代码复现。
+- **当前路线决策**: Phase Spatial-05 已基于作者 RDS 中已检查到的 image slots 和坐标进行 RDS-based reproduction/approximation。该路线必须明确标注为近似复现，不能报告为严格作者代码复现。
+- **当前科学路线**: 先复现并验证论文中的 hippocampus 相关空间流程，确认区域框架和作者结果的对应关系；随后再把同一套区域框架迁移到 CA1/CA3/DG 线粒体相关基因表达问题。
+- **下一优先级**: Phase Spatial-06 应聚焦 hippocampal regional atlas reproduction（CA1、CA2、CA3、ML、GCL、Hilus 和派生 DG），而不是直接进入线粒体分析。
 
 ### 11.4 脚手架步骤
 
@@ -373,7 +382,7 @@ gene_lists/
 | 6. 创建 docs/environment_renv_notes.md | 环境和 renv 状态 | ✅ |
 | 7. 创建 docs/memory_management.md | 内存管理约束 | ✅ |
 | 8. 创建 R/spatial/README.md | 脚手架说明 | ✅ |
-| 9. 创建占位目录 | R/spatial/, data/raw/spatial/, data/processed/spatial/, figures/spatial/ | ✅ |
+| 9. 定义目录约定 | `R/scrna/`、`R/spatial/`、可选 `python/spatial/` 为源码目录；`data/`、`figures/` 等为 gitignored 本地产物目录；不再保留空占位目录 | ✅ |
 | 10. 更新 .gitignore | 最小化非冗余添加 | ✅ |
 | 11. 最终报告 | 列出所有变更 | ✅ |
 
@@ -382,7 +391,7 @@ gene_lists/
 - **不安装任何 R 包**
 - **不修改 renv.lock**
 - **不下载数据**
-- **不实现任何分析脚本**
+- **不在复现验证完成前实现 CA1/CA3/DG 线粒体分析**
 - **不假设元数据（assay、spatial key、图像、解剖标签）**
 - **不在 gitignore 目录中创建 .gitkeep 文件**
 - 工具/方法选择须先经过 ref-bio 参考路由和实际对象结构检查，不在本脚手架阶段预设

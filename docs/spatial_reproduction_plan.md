@@ -4,14 +4,18 @@
 > **Source paper**: Wu et al. (2025) *Nature Neuroscience* 28:415–430  
 > **DOI**: https://doi.org/10.1038/s41593-024-01848-4  
 > **GEO**: GSE233363  
-> **Plan version**: 3.1 (2026-06-03)  
-> **Status**: Stages Spatial-01 through Spatial-04 implemented for DG/Hippo. Phase Spatial-05 is now planned as an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available.
+> **Plan version**: 3.2 (2026-06-03)  
+> **Status**: Stages Spatial-01 through Spatial-05 have been implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available.
 
 > **Figures output convention**: All spatial figures use `figures/spatial/` (not `figures/stage-2/spatial/`). Rationale: AGENTS.md defines `figures/spatial/` as the spatial figures directory; `figures/stage-2/` is reserved for the scRNA-seq pipeline. Spatial analysis is a distinct pipeline branch and gets its own top-level spatial directory.
 
 > **Current spatial object scope**: Future implementation phases should focus on `seurat_Visium_DG_All.rds` and `seurat_Visium_Hippo_All.rds`. `seurat_Visium_WholeBrain.rds` is inventoried only and should not be loaded or analyzed for now because of memory risk and current project focus. WholeBrain work requires a separate user confirmation and plan update.
 
 > **Phase Spatial-05 route decision**: The author's Script 8 uses external raw Visium/Space Ranger files with `STutility::InputFromTable()`, `LoadImages()`, and `RegionNeighbours()`. Those files are not available locally, while the author-provided Hippo/DG Seurat RDS objects already contain `VisiumV1` image slots and spot coordinates. Therefore Phase Spatial-05 should proceed as an **RDS-based reproduction/approximation** using the inspected Seurat objects. This route must be labeled as an approximation and must not be reported as a strict author-code reproduction of the STutility section. If raw Visium files are later found, restore a separate strict-author-code plan.
+
+> **Current scientific trajectory**: First reproduce and validate the paper's hippocampus-related spatial workflow as faithfully as the available RDS objects allow. Only after the hippocampal regional framework is verified should the project migrate the same region-aware framework to the user's downstream CA1/CA3/DG mitochondrial-gene question. Do not start mitochondrial interpretation until the hippocampus reproduction branch has an explicit validation report.
+
+> **Repository organization note**: Maintained R analysis code is split by branch: scRNA-seq scripts live under `R/scrna/`, spatial R scripts live under `R/spatial/`, and optional future Python/Tangram source belongs under `python/spatial/`. The local `analysis/` directory is retired and should not be used for new scripts or outputs. Generated spatial files remain under `data/processed/spatial/` and `figures/spatial/`. See `docs/repository_structure.md`.
 
 ---
 
@@ -85,7 +89,7 @@
 2. **Author uses Seurat v4.3; project uses v5.5.0**: Assay naming (`Spatial` vs `Spatial.01`) and SCT slot behavior may differ
 3. **STutility package and raw inputs**: Used in author Script 8 for `RegionNeighbours`, but the required external raw Visium files are not currently available. Current Phase Spatial-05 should not install/use STutility unless raw files are found.
 4. **Raw Visium H5 + spatial files**: Not available locally; strict author-code STutility reproduction requires these files.
-5. **Tangram**: Paper uses v1.0.4 + scanpy 1.10.1 + CUDA; requires separate Python environment (not planned here)
+5. **Tangram**: Paper uses v1.0.4 + scanpy 1.10.1 + CUDA; this is an optional Python branch under `python/spatial/` only if Phase Spatial-07 says it is required
 
 ---
 
@@ -300,61 +304,69 @@ Exact file names must be defined in the Phase Spatial-05 pre-execution plan afte
 
 ---
 
-## Phase Spatial-06: Optional Tangram / Cross-Modality Branch
+## Phase Spatial-06: Hippocampal Regional Atlas Reproduction
 
 ### Goal
-Reproduce the Tangram cell-type deconvolution from the Python notebook, projecting scRNA-seq cell types onto Visium spots. **This phase is optional** — only proceed if paper figure mapping confirms it is required for target figures.
+Reproduce the hippocampus-relevant regional structure from author Script 6 using the already-inspected `seurat_Visium_Hippo_All.rds`. This phase establishes the region-aware framework needed for later CA1/CA3/DG mitochondrial analysis, but it must not perform mitochondrial analysis yet.
+
+This phase focuses on the hippocampal portion of the paper workflow: CA1, CA2, CA3, ML, GCL, Hilus, and the derived DG grouping (`ML + GCL + Hilus`). It should be treated as a prerequisite quality gate before downstream region-specific questions.
 
 ### Input Files
-- `data/processed/neuro_processed.rds` (scRNA-seq reference)
-- `data/raw/GSE233363_official/seurat_Visium_DG_All.rds` (or `seurat_Visium_Hippo_All.rds`)
-- `docs/original_code_from_paper/Scripts/Python/notebook_tangram.ipynb` (reference only)
+- `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
+- `data/raw/GSE233363_official/seurat_Visium_DG_All.rds` (reference/check only; load sequentially if needed)
+- `docs/original_code_from_paper/Scripts/R/6. Spatial-Data process.R` (reference only)
+- Phase Spatial-01/02 inspection and metadata outputs
 
 ### Output Files / Directories
-- `data/processed/spatial/tangram_mapped_annotations.csv` — per-spot cell type probabilities
-- `figures/spatial/tangram_celltype_overlay.pdf` — spatial overlay of mapped cell types
+- `data/processed/spatial/phase06_hippo_regional_atlas/` — region counts, age/sample summaries, coordinate audits, and provenance
+- `figures/spatial/phase06_hippo_regional_atlas/` — UMAP/tSNE/PCA and per-slice spatial region maps
 
 ### Scripts to Create Later
-- `R/spatial/s06_tangram_celltype_mapping.R` (or Python equivalent)
+- `R/spatial/s06_hippo_regional_atlas.R`
 
-### Dependencies to Verify
-- Python environment with: `tangram==1.0.4`, `scanpy==1.10.1`, `squidpy`
-- CUDA GPU (paper specifies `cells` mode, 1000 epochs, `rna_count_based` density prior)
-- If no CUDA: CPU fallback exists but will be slower; document runtime differences
+### Required Outputs
+- Region x Age x GEMgroup count table for CA1, CA2, CA3, ML, GCL, Hilus, and derived DG
+- Per-image/slice spatial maps colored by Region
+- Overview spatial map faceted by image/slice
+- UMAP, tSNE, and PCA plots colored by Region, Age, and GEMgroup using existing reductions only
+- A derived-region metadata table with `region_group` values such as `CA1`, `CA2`, `CA3`, `DG`, and `Other` if needed
+- Validation summary comparing counts against Phase Spatial-02 and author Script 6 expectations
 
 ### Validation Checks
-- Mapped cell types compared against paper Extended Data Fig. 2e panels and author Tangram notebook outputs
-- Per-region cell type distributions compared against paper Extended Data Fig. 2e and author Script 6 outputs
-- Only lightweight final summaries saved (not intermediate AnnData files)
+- Hippo object still has 9,921 spots and 16 images
+- Region levels include CA1, CA2, CA3, ML, GCL, Hilus
+- DG derived from `ML + GCL + Hilus` has 2,364 spots and matches the inspected DG object at the count level
+- Age and GEMgroup mappings match Phase Spatial-02
+- Coordinates are extracted per image/slice, not pooled into one coordinate plane
+- Plots are labeled as RDS-based regional reproduction from author-provided Seurat objects, not raw Space Ranger reprocessing
 
 ### Memory Cautions
-- Python memory separate from R
-- Do not load full AnnData in R; use CSV exchange
+- Load Hippo and DG sequentially, not together unless the implementation plan proves it is safe
+- Do not load WholeBrain in this phase
+- Use existing reductions and metadata; do not rerun SCTransform, PCA, UMAP, tSNE, or clustering unless a separate user-approved plan says to do so
+- Do not save modified full Seurat objects
 
 ### Stop Conditions
-- If CUDA not available: record as implementation constraint, defer to user decision
-- If Python environment not set up: record as prerequisite, do not install in this plan
-- If paper figures do not require Tangram output: skip this phase entirely
-
-### Implementation Constraints (to log, not resolve now)
-- CUDA vs CPU differences in runtime and convergence
-- Tangram v1.0.4 vs current version compatibility
-- scanpy version compatibility with tangram
+- If Region/Age/GEMgroup columns are missing or inconsistent with Phase Spatial-02, stop and document the mismatch
+- If DG count-level consistency fails, stop before downstream regional analysis
+- If a requested plot requires WholeBrain, stop and request a separate WholeBrain-specific plan
 
 ---
 
-## Phase Spatial-07: Figure/Output Validation and Documentation
+## Phase Spatial-07: Reproduction Validation and Gap Report
 
 ### Goal
-Validate all reproduced figures against paper targets, document discrepancies, and produce a final reproducibility report.
+Validate the hippocampus-related reproduced outputs against paper targets and author code, document discrepancies, and decide which remaining paper branches are required before moving to CA1/CA3/DG mitochondrial analysis.
 
 ### Input Files
 - All outputs from Phases Spatial-01 through Spatial-06
 - `docs/original_paper.pdf` (for figure comparison)
+- Author Scripts 6, 7, and 8
 
 ### Output Files / Directories
 - `docs/spatial_figure_validation.md` — per-figure validation status
-- `docs/spatial_reproducibility_report.md` — final report with known limitations
+- `docs/spatial_reproducibility_report.md` — reproducibility report with known limitations
+- `docs/spatial_handoff_to_mitochondrial_analysis.md` — explicit go/no-go handoff for CA1/CA3/DG mitochondrial planning
 - `figures/spatial/` — all reproduced figures
 
 ### Scripts to Create Later
@@ -376,23 +388,72 @@ Validate all reproduced figures against paper targets, document discrepancies, a
 - Note where author code uses tools not mentioned in paper (e.g., STutility)
 - Note Seurat version differences (v4.3 in paper vs v5.5.0 in project)
 - Note missing raw data (H5 files, CSVs) that prevent full reprocessing
+- Clearly separate strict reproductions, partial reproductions, and RDS-based approximations
+- Specifically report Phase Spatial-04 IFNγ/Edge discrepancies and Phase Spatial-05 RDS-approximation discrepancies before allowing any biology-facing reuse
 
 ---
 
-## Do Not Do Yet
+## Phase Spatial-08: Optional Tangram / Cross-Modality Branch
 
-The following actions are explicitly excluded from this plan:
+### Goal
+Reproduce the Tangram cell-type deconvolution from the Python notebook, projecting scRNA-seq cell types onto Visium spots. **This phase remains optional** and should run only if Phase Spatial-07 concludes that Tangram output is required for Fig. 1h, Extended Data Fig. 2e, or a downstream region/cell-type question.
 
-1. **Do not install any packages** — no `renv::install()`, no `install.packages()`, no `BiocManager::install()`
-2. **Do not modify `renv.lock`** — no changes to dependency versions
-3. **Do not download data** — no Zenodo downloads, no GEO downloads, no SRA downloads
-4. **Do not run R scripts** — no `Rscript` execution, no interactive R sessions
-5. **Do not create analysis scripts** — no `R/spatial/s01*.R` etc. until implementation phase
-6. **Do not set up Python environment** — no `pip install`, no conda, no virtualenv
-7. **Do not modify existing scRNA-seq pipeline** — no changes to `R/01_*.R` through `R/05_*.R`
-8. **Do not save full Seurat object duplicates** — only lightweight CSV/text summaries
-9. **Do not perform biological reinterpretation** — reproduce author methods, do not add new analyses
-10. **Do not create `docs/spatial/` directory** — defer to implementation phase for validation/report files
+### Input Files
+- `data/processed/neuro_processed.rds` (scRNA-seq reference)
+- `data/raw/GSE233363_official/seurat_Visium_DG_All.rds` or `seurat_Visium_Hippo_All.rds`
+- `docs/original_code_from_paper/Scripts/Python/notebook_tangram.ipynb` (reference only)
+
+### Output Files / Directories
+- `data/processed/spatial/phase08_tangram/` — mapped cell-type scores/probabilities and provenance
+- `figures/spatial/phase08_tangram/` — spatial overlays for mapped cell types
+
+### Scripts to Create Later
+- `python/spatial/s08_tangram_celltype_mapping.py` if a Python environment is approved, or `R/spatial/s08_tangram_celltype_mapping.R` only for R-side export/import helpers
+
+### Dependencies to Verify
+- Separate Python environment with `tangram==1.0.4`, `scanpy==1.10.1`, and related dependencies
+- CUDA GPU if strict runtime matching is required; CPU fallback must be documented if used
+
+### Stop Conditions
+- If Python environment setup would require package installation, stop and request approval
+- Do not use renv for Python dependencies; document Python version, package versions, CPU/GPU mode, and environment path separately
+- If Phase Spatial-07 does not require Tangram for the next scientific question, skip this phase
+
+---
+
+## Phase Spatial-09: CA1/CA3/DG Mitochondrial Analysis Planning
+
+### Goal
+Migrate the validated hippocampal regional framework to the user's downstream scientific question: mitochondrial-related gene expression in CA1, CA3, and DG. This phase begins only after Phase Spatial-06 regional atlas reproduction and Phase Spatial-07 validation/handoff are complete.
+
+### Scope Guardrail
+This phase is a planning gate before biological analysis. It must define the mitochondrial gene-source strategy, expression assay/layer choice, sample-level aggregation design, and validation criteria before any interpretation is attempted.
+
+### Inputs to Plan From
+- Validated region framework from Phase Spatial-06
+- Reproducibility/gap report from Phase Spatial-07
+- `seurat_Visium_Hippo_All.rds` raw Spatial counts and metadata
+- Official mitochondrial-gene references or project-approved gene lists to be selected in this phase, not guessed earlier
+
+### Future Analysis Principles
+- Compare regions using biological sample/GEMgroup-aware summaries, not raw spots as independent replicates
+- Prefer pseudobulk or sample-level summaries for inferential comparisons
+- Keep CA1, CA3, and DG region definitions explicit and reproducible
+- Record whether DG means `ML + GCL + Hilus` or a more specific subset for each analysis
+- Do not reuse IFNγ Edge/NNS/ENS labels as a substitute for CA1/CA3/DG regional labels
+
+## Global Constraints for Future Phases
+
+The following constraints apply to all future spatial phases:
+
+1. **Do not modify the existing scRNA-seq pipeline** — no changes to `R/scrna/01_*.R` through `R/scrna/05_*.R` unless explicitly approved.
+2. **Do not treat Visium spots as independent biological replicates** — use sample/GEMgroup-aware summaries for inferential comparisons.
+3. **Do not save full Seurat object duplicates** — only lightweight CSV/text summaries unless a separate plan justifies a checkpoint.
+4. **Do not load WholeBrain by default** — `seurat_Visium_WholeBrain.rds` requires a separate user-approved memory plan.
+5. **Do not perform biological reinterpretation during reproduction phases** — first reproduce/validate author hippocampus workflows, then move to CA1/CA3/DG mitochondrial planning.
+6. **Do not add packages silently** — package installation and `renv.lock` updates are allowed only when a reproduction phase explicitly requires them and the user approves.
+7. **Do not use raw-file-only methods as silent substitutes** — if raw Visium/STutility inputs are unavailable, label outputs as RDS-based approximation.
+8. **Do not define mitochondrial gene lists ad hoc** — mitochondrial gene-source decisions belong to Phase Spatial-09 planning.
 
 ---
 
@@ -409,9 +470,13 @@ Phase 04 (IFNγ Module)  ← depends on 02
     ↓
 Phase 05 (Gradient)     ← depends on 04
     ↓
-Phase 06 (Tangram)      ← optional, depends on 02 + Python env
+Phase 06 (Hippo Atlas)  ← depends on 02; establishes CA1/CA3/DG region framework
     ↓
-Phase 07 (Validation)   ← depends on all above
+Phase 07 (Validation)   ← depends on 01-06; decides readiness for mitochondrial planning
+    ↓
+Phase 08 (Tangram)      ← optional, only if validation requires it
+    ↓
+Phase 09 (Mito Plan)    ← depends on 06-07 handoff
 ```
 
 Phases 03 and 04 can run in parallel after Phase 02 completes.
@@ -440,10 +505,12 @@ Phases 03 and 04 can run in parallel after Phase 02 completes.
 ## Open Questions
 
 1. **Data download timing**: When should Zenodo RDS files be downloaded? Before Phase 01 or as needed?
-2. **Tangram requirement**: Is Tangram output needed for any target figure? If not, Phase 06 can be skipped.
-3. **Middle timepoint**: Paper includes Middle-aged group. Author code compares OY, MY, OM. Should Middle be included in reproduction?
-4. **Full reprocessing vs Zenodo RDS**: Current decision is to proceed with RDS-based approximation because raw Visium/Space Ranger files are not available. Revisit only if those files are found.
-5. **STutility dependency**: Current decision is not to install/use STutility for Phase Spatial-05. A strict STutility branch can be reopened only if raw Visium files are found.
+2. **Hippocampus-first validation**: Phase Spatial-06/07 must determine whether the Hippo RDS regional framework is sufficiently faithful for later CA1/CA3/DG mitochondrial analysis.
+3. **Tangram requirement**: Is Tangram output needed for Fig. 1h / Extended Data Fig. 2e or for downstream region/cell-type interpretation? If not, Phase 08 can be skipped.
+4. **Middle timepoint**: Paper includes Middle-aged group. Author code compares OY, MY, OM. Middle should remain in reproduction outputs unless a later user-approved mitochondrial plan excludes it.
+5. **Full reprocessing vs Zenodo RDS**: Current decision is to proceed with RDS-based approximation because raw Visium/Space Ranger files are not available. Revisit only if those files are found.
+6. **STutility dependency**: Current decision is not to install/use STutility for Phase Spatial-05. A strict STutility branch can be reopened only if raw Visium files are found.
+7. **Mitochondrial gene-source definition**: Do not define or analyze mitochondrial gene sets until Phase Spatial-09 planning; use official references or project-approved gene lists at that time.
 
 ---
 
@@ -462,3 +529,4 @@ Phases 03 and 04 can run in parallel after Phase 02 completes.
 | ggplot2 | All visualization | To verify (check renv.lock) | All |
 | pheatmap | Heatmaps | To verify | 03 |
 | Matrix | aggregate.Matrix | To verify (check renv.lock) | 03 |
+| Tangram / scanpy | Optional cross-modality mapping in `python/spatial/` | Optional; verify only if Phase 08 is approved | 08 |

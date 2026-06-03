@@ -6,7 +6,14 @@ figures/
 Rplots.pdf
 
 # === R environment ===
-renv/
+renv/library/
+renv/staging/
+renv/sandbox/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/.cache/
 .Rhistory
 .Rdata
 .RData
@@ -32,6 +39,14 @@ reports/
 *.loom
 *.qs
 *.qsave
+
+# === Python local environments / caches ===
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
 
 # === IDE ===
 .vscode/

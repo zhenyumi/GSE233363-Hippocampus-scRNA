@@ -50,11 +50,11 @@ message("  renv setup complete")
 message("\n[2/3] Running analysis pipeline...")
 
 scripts <- c(
-  "R/01_load_and_subset.R",
-  "R/02_module_scores.R",
-  "R/03_figures_0_to_4.R",
-  "R/04_de_and_volcano.R",
-  "R/05_correlation_heatmaps.R"
+  "R/scrna/01_load_and_subset.R",
+  "R/scrna/02_module_scores.R",
+  "R/scrna/03_figures_0_to_4.R",
+  "R/scrna/04_de_and_volcano.R",
+  "R/scrna/05_correlation_heatmaps.R"
 )
 
 for (script in scripts) {

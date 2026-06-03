@@ -32,7 +32,7 @@ object_key <- if (length(positional) >= 1) positional[1] else "DG"
 # Reject Chromium explicitly
 if (tolower(object_key) == "chromium") {
   stop("Chromium is a scRNA-seq object and must NOT be loaded by spatial scripts. ",
-       "Use the scRNA-seq pipeline (R/01_load_and_subset.R) for Chromium.")
+       "Use the scRNA-seq pipeline (R/scrna/01_load_and_subset.R) for Chromium.")
 }
 
 # Validate object_key
