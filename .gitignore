@@ -1,7 +1,5 @@
 # === Data files (large, user-specific) ===
-data/raw/
-data/processed/*.rds
-data/processed/*.csv
+data/
 
 # === Figures (generated) ===
 figures/
@@ -21,9 +19,7 @@ renv/
 .DS_Store
 ._*
 
-# === Spatial transcriptomics (future) ===
-data/processed/spatial/*.csv
-data/processed/spatial/*.txt
+# === Generated analysis outputs ===
 results/
 cache/
 reports/
