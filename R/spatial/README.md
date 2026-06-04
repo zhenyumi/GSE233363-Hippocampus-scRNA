@@ -33,10 +33,13 @@ Scripts use the `s##_` prefix (not `0##_` which is reserved for scRNA-seq pipeli
 | `s04_` | IFN-gamma module score and FuncRegion handoff | Implemented with WARNING handoff |
 | `s05_` | RDS-based inflammatory gradient approximation | Implemented; not strict STutility reproduction |
 | `s05b_` | Plot RDS-based spatial label maps | Implemented |
-| `s06_` | Hippocampal regional atlas reproduction | Next planned stage |
-| `s07_` | Reproduction validation and handoff report | Planned |
+| `s06_` | Hippocampal regional atlas reproduction | Implemented (PASS 54/54) |
+| `s07_` | Reproduction validation and handoff report | Implemented (GO_WITH_CAVEATS) |
 | `s08_` | Optional Tangram branch | Optional; Python source goes under `python/spatial/` if required |
-| `s09_` | CA1/CA3/DG mitochondrial analysis planning | Planned after hippocampus validation |
+| `s09_` | CA1/CA3/DG target gene analysis planning | Implemented (plan doc only) |
+| `s10_` | Target gene audit and region-aware expression summaries | Implemented (25 PASS, 1 WARNING) |
+| `s11_` | CA1 vs CA3 pseudobulk DESeq2, module scores, coupling | Implemented (35 PASS) |
+| `s11b_` | Age-grouping stratified CA1 vs CA3 DE and cross-age patterns | Implemented (30 PASS, 1 WARNING) |
 
 Actual script names and purposes will be determined after inspecting the spatial objects.
 

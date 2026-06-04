@@ -5,7 +5,7 @@
 > **DOI**: https://doi.org/10.1038/s41593-024-01848-4  
 > **GEO**: GSE233363  
 > **Plan version**: 3.2 (2026-06-03)  
-> **Status**: Stages Spatial-01 through Spatial-05 have been implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available.
+> **Status**: Stages Spatial-01 through Spatial-11/11b have been implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available. Phase Spatial-07 handoff: GO_WITH_CAVEATS. Phase Spatial-10/11: CA1 vs CA3 target gene, module score, and age-stratified DE analysis complete.
 
 > **Figures output convention**: All spatial figures use `figures/spatial/` (not `figures/stage-2/spatial/`). Rationale: AGENTS.md defines `figures/spatial/` as the spatial figures directory; `figures/stage-2/` is reserved for the scRNA-seq pipeline. Spatial analysis is a distinct pipeline branch and gets its own top-level spatial directory.
 
@@ -442,6 +442,74 @@ This phase is a planning gate before biological analysis. It must define the mit
 - Record whether DG means `ML + GCL + Hilus` or a more specific subset for each analysis
 - Do not reuse IFNγ Edge/NNS/ENS labels as a substitute for CA1/CA3/DG regional labels
 
+### Outputs
+- `docs/spatial_phase09_mito_target_gene_analysis_plan.md` (v2.1)
+- `docs/spatial_mito_target_gene_strategy.md` (v2.1)
+
+---
+
+## Phase Spatial-10: Target Gene Audit and Region-Aware Expression Summaries
+
+### Goal
+Audit the target gene list (251 genes, 13 categories from `docs/target_genes.csv`), map gene symbols to the Spatial assay, extract per-spot expression, and generate region-aware summaries for CA1, CA3, DG, and CA2 (context/QC).
+
+### Key Results
+- 231 exact-match genes, 20 not found (16 Atp5*, 1 Ndufb1, 3 Mrps)
+- Region groups: CA1=4671, CA2=565, CA3=2321, DG=2364
+- All three age groups (Young/Middle/Old) summarized
+- Validation: 25 PASS, 0 FAIL, 1 WARNING (V10: 20 missing genes)
+
+### Outputs
+- `data/processed/spatial/phase10_target_gene_audit/` — region_sample_summary.csv, region_age_summary.csv, region_subregion_summary.csv, spot_expression_nonzero_long.csv.gz, target_gene_input_audit.csv, low_coverage_gemgroups.csv
+- `figures/spatial/phase10_target_gene_audit/` — QC plots (dot/bar/heatmap), spatial maps
+
+### Script
+- `R/spatial/s10_target_gene_audit_region_summary.R`
+
+---
+
+## Phase Spatial-11: CA1 vs CA3 Pseudobulk DE, Module Scores, and Coupling
+
+### Goal
+Perform pseudobulk DESeq2 analysis comparing CA3 vs CA1, compute mitochondrial/ribosomal module scores, and assess DE-module coupling (Spearman correlation).
+
+### Key Results
+- DESeq2: 17,970 genes tested, 5,921 significant (padj<0.05), apeglm shrinkage
+- Target genes: 231/251 found, 20 missing
+- Modules: 12 scored (Complex V excluded — 0 genes after rescue)
+- Pseudobulk: 31 samples (CA1=16, CA3=15), 15 paired GEMgroups
+- Coupling: 30 pair-context combinations, rho [-0.268, 0.971]
+- Validation: 35 PASS (1 WARNING after audit correction: Complex V excluded)
+
+### Outputs
+- `data/processed/spatial/phase11_ca1_ca3_de_module_coupling/` — 21 data files
+- `figures/spatial/phase11_ca1_ca3_de_module_coupling/` — 18 figure PNGs
+
+### Script
+- `R/spatial/s11_ca1_ca3_de_module_coupling.R`
+
+---
+
+## Phase Spatial-11b: Age-Grouping Stratified CA1 vs CA3 DE
+
+### Goal
+Perform age-stratified (Young/Middle/Old) pseudobulk DESeq2 analysis comparing CA3 vs CA1, classify cross-age patterns, and generate age-specific coupling and module delta summaries.
+
+### Key Results
+- DESeq2 per age: Young=13440 tested/1462 sig, Middle=13376/1334, Old=15155/3681 (all apeglm)
+- Cross-age patterns: 104 concordant CA3-high, 65 concordant CA1-high, 31 old-enhanced, 24 age-flipped, 7 mixed
+- Module delta: 36 rows (12 modules × 3 ages)
+- Age-stratified coupling: 18 rows
+- Validation: 30 PASS, 1 WARNING (V21: Complex V excluded)
+
+### Outputs
+- `data/processed/spatial/phase11_age_grouping/` — 14 data files
+- `figures/spatial/phase11_age_grouping/` — 8 PNGs
+- `docs/spatial_phase11_age_grouping_analysis_guide.md`
+
+### Script
+- `R/spatial/s11b_age_grouping_ca1_ca3_de.R`
+
 ## Global Constraints for Future Phases
 
 The following constraints apply to all future spatial phases:
@@ -477,6 +545,12 @@ Phase 07 (Validation)   ← depends on 01-06; decides readiness for mitochondria
 Phase 08 (Tangram)      ← optional, only if validation requires it
     ↓
 Phase 09 (Mito Plan)    ← depends on 06-07 handoff
+    ↓
+Phase 10 (Gene Audit)   ← depends on 09; target gene audit + region summaries
+    ↓
+Phase 11 (CA1/CA3 DE)   ← depends on 10; pseudobulk DE + module scores + coupling
+    ↓
+Phase 11b (Age DE)      ← depends on 11; age-stratified CA1 vs CA3 DE + cross-age patterns
 ```
 
 Phases 03 and 04 can run in parallel after Phase 02 completes.
@@ -520,13 +594,16 @@ Phases 03 and 04 can run in parallel after Phase 02 completes.
 
 | Package | Required By | Status | Phase |
 |---------|------------|--------|-------|
-| Seurat (v5.5.0) | All phases | To verify (check renv.lock) | All |
-| SCTransform | Phase 02 | To verify | 02 |
-| DESeq2 | Phases 03, 05 | To verify | 03, 05 |
-| msigdbr | Phase 04 | To verify | 04 |
+| Seurat (v5.5.0) | All phases | Installed (renv.lock) | All |
+| SCTransform | Phase 02 | Installed (renv.lock) | 02 |
+| DESeq2 | Phases 03, 05, 11, 11b | Installed (renv.lock) | 03, 05, 11, 11b |
+| apeglm | Phases 11, 11b (LFC shrinkage) | Installed (renv.lock) | 11, 11b |
+| Matrix.utils | Phases 11, 11b (pseudobulk aggregation) | Installed (renv.lock) | 11, 11b |
+| corrplot | Phase 11 (coupling visualization) | Installed (renv.lock) | 11 |
+| msigdbr | Phase 04 | Installed (renv.lock) | 04 |
 | STutility | Strict raw-file branch only | Not required for current RDS-based Phase 05 | 05 optional/future |
 | Monocle 2 | Paper-methods branch only | Not required for current RDS-based Phase 05 | 05 optional/future |
-| ggplot2 | All visualization | To verify (check renv.lock) | All |
-| pheatmap | Heatmaps | To verify | 03 |
-| Matrix | aggregate.Matrix | To verify (check renv.lock) | 03 |
+| ggplot2 | All visualization | Installed (renv.lock) | All |
+| pheatmap | Heatmaps | Installed (renv.lock) | 03, 10, 11 |
+| Matrix | aggregate.Matrix | Installed (renv.lock) | 03, 11 |
 | Tangram / scanpy | Optional cross-modality mapping in `python/spatial/` | Optional; verify only if Phase 08 is approved | 08 |

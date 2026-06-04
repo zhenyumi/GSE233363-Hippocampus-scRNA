@@ -65,16 +65,37 @@ Current input:
 
 - `data/raw/GSE233363_official/seurat_Visium_DG_All.rds`
 - `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
+- `docs/target_genes.csv` — 251 mitochondrial/ribosomal/translation genes (13 categories, GBK encoding)
 
 Current scope:
 
-- Stages Spatial-01 through Spatial-05 are implemented for DG/Hippo.
+- Stages Spatial-01 through Spatial-11/11b are implemented for DG/Hippo.
 - Phase Spatial-05 is labeled as RDS-based reproduction/approximation because the raw Space Ranger/Visium files required by the author's STutility route are not available locally.
+- Phase Spatial-06: Hippocampal regional atlas (CA1/CA2/CA3/ML/GCL/Hilus/DG).
+- Phase Spatial-07: Reproduction validation and handoff (GO_WITH_CAVEATS).
+- Phase Spatial-09: Mitochondrial target gene analysis plan.
+- Phase Spatial-10: Target gene audit and region-aware expression summaries.
+- Phase Spatial-11: CA1 vs CA3 pseudobulk DE, module scores, and coupling analysis.
+- Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification.
 - WholeBrain remains inventory-only unless a separate user-approved plan says otherwise.
 
 Scripts:
 
-- See `R/spatial/README.md`.
+| Script | Purpose |
+|--------|---------|
+| `R/spatial/s01_inspect_objects.R` | Inspect DG/Hippo spatial objects |
+| `R/spatial/s02_dg_hippo_metadata.R` | Verify DG/Hippo metadata and structure |
+| `R/spatial/s03_pseudobulk_deseq2_dg.R` | Pseudobulk DESeq2 DG old vs young |
+| `R/spatial/s04_ifng_module_score.R` | IFNγ module score and FuncRegion handoff |
+| `R/spatial/s05_rds_inflammatory_gradient.R` | RDS-based inflammatory gradient approximation |
+| `R/spatial/s05b_plot_spatial_labels.R` | Plot spatial label maps |
+| `R/spatial/s06_hippo_regional_atlas.R` | Hippocampal regional atlas (CA1/CA2/CA3/ML/GCL/Hilus/DG) |
+| `R/spatial/s07_figure_validation.R` | Reproduction validation and handoff report |
+| `R/spatial/s10_target_gene_audit_region_summary.R` | Target gene audit and region-aware expression summaries |
+| `R/spatial/s11_ca1_ca3_de_module_coupling.R` | CA1 vs CA3 pseudobulk DE, module scores, coupling |
+| `R/spatial/s11b_age_grouping_ca1_ca3_de.R` | Age-stratified CA1 vs CA3 DE and cross-age patterns |
+
+See `R/spatial/README.md` for details.
 
 Optional Python:
 

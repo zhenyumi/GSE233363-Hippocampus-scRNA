@@ -1,0 +1,19 @@
+分类亚类,基因名
+线粒体基因组编码（mt-）,mt-Co1、mt-Co2、mt-Co3、mt-Cytb、mt-Nd1、mt-Nd2、mt-Nd4、mt-Nd5、mt-Atp6
+呼吸链复合体 I（Nduf/Ndufv/Ndufb/Ndufc）,Ndufa4、Ndufa10、Ndufa12、Ndufa11、Ndufa13、Ndufa3、Ndufa8、Ndufa2、Ndufa9、Ndufa5、Ndufa7、Ndufa6、Ndufs5、Ndufs2、Ndufs7、Ndufs3、Ndufs6、Ndufs8、Ndufv3、Ndufv1、Ndufv2、Ndufb2、Ndufb8、Ndufb9、Ndufb10、Ndufb7、Ndufb6、Ndufb5、Ndufb3、Ndufb11、Ndufb1、Ndufc1、Ndufc2、Ndufab1
+呼吸链复合体 III（Uqcr/Uqcrc/Uqcc）,Uqcrh、Uqcr10、Uqcr11、Uqcrfs1、Uqcrb、Uqcrc1、Uqcrc2、Uqcrq、Uqcc2、Uqcc3、Cyc1
+呼吸链复合体 IV（Cox）,Cox8a、Cox4i1、Cox7b、Cox6c、Cox6b1、Cox5a、Cox6a1、Cox7c、Cox7a2、Cox7a2l、Cox5b、Cox14、Cox17
+呼吸链复合体 V（Atp5 亚基，ATP 合酶）,Atp5mc1、Atp5po、Atp5pd、Atp5pf、Atp5f1a、Atp5f1d、Atp5mg、Atp5if1、Atp5f1b、Atp5mk、Atp5mj、Atp5mf、Atp5me、Atp5f1e、Atp5f1c、Atp5pb
+三羧酸循环 TCA 关键酶,Mdh1、Mdh2、Idh3a、Idh3g、Suclg1、Sucla2、Pdha1、Dlat、Got1、Got2、Sdha、Sdhb
+线粒体核糖体蛋白（MRPL/MRPS，同时归入线粒体翻译）,Mrpl28、Mrpl30、Mrpl12、Mrpl13、Mrpl43、Mrpl34、Mrpl15、Mrpl46、Mrpl35、Mrpl51、Mrpl55、Mrpl21、Mrpl17、Mrpl14、Mrps33、Mrps14、Mrps20、Mrps23、Mrps42、Mrps12、Mrps24、Mrps5、Mrps16、Mrps18a、Mrps25、Mrps54
+线粒体外膜 / 内膜转运 / 孔蛋白,Vdac1、Vdac2、Vdac3、Tomm34、Tomm7、Tomm20、Timm10、Timm10b、Timm8b、Timm13、Slc25a4、Slc25a5、Slc25a3、Slc25a11、Fis1
+线粒体分子伴侣 / 抗氧化 / 代谢酶,Hspd1、Hspe1、Prdx5、Prdx2、Prdx1、Prdx6、Gpx4、Sod1、Glrx3、Glrx2、Glrx5、Coq7、Mpc2、Etfb、Etf1、Dld、Ech1、Higd1a、Higd2a、Chchd2、Chchd10、Chchd6、Ftl1、Fth1、Cisd1、Park7、Ldhb、Ldha、Pkm
+,
+亚类,基因名
+RPL（胞质大亚基）,Rpl19、Rpl41、Rpl38、Rpl23、Rpl29、Rpl15、Rpl6、Rpl21、Rpl27、Rpl27a、Rpl36a、Rpl3、Rplp1、Rplp2、Rplp0、Rpl24、Rpl18、Rpl7a、Rpl36、Rpl23a、Rpl39、Rpl26、Rpl35、Rpl10、Rpl37、Rpl37a、Rpl30、Rpl14、Rpl10a、Rpl9、Rpl22、Rpl5、Rpl28、Rpl12、Rpl32、Rpl7、Rpl4
+RPS（胞质小亚基）,Rps14、Rps13、Rps8、Rps20、Rps21、Rps24、Rps15、Rps15a、Rps27a、Rps2、Rps11、Rps26、Rps6、Rps7、Rps17、Rps19、Rps25、Rps3、Rps4x、Rps16、Rps9、Rps5、Rps23、Rps18、Rps28、Rps10、Rps3a1
+,
+,
+分类,基因名
+起始因子 Eif,Eif1b、Eif1、Eif5a、Eif4a2、Eif4g2、Eif4h、Eif3c、Eif3g、Eif3f、Eif3k、Eif3h、Eif3i、Eif1ax、Eif6、Eif5、Eif2s2
+延伸因子 Eef,Eef1a2、Eef1a1、Eef2、Eef1g、Eef1b2、Eef1akmt1

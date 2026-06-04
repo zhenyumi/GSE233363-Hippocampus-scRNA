@@ -93,7 +93,7 @@ Rscript run_pipeline.R
 - Memory: call `gc()` after large operations
 
 ## Spatial Transcriptomics Extension (Phase Spatial-00)
-**Status**: Scaffold plus Stages Spatial-01 through Spatial-05 implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation, not strict STutility reproduction.
+**Status**: Stages Spatial-01 through Spatial-11/11b implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation, not strict STutility reproduction. Phase Spatial-07 handoff: GO_WITH_CAVEATS. Phase Spatial-10/11: CA1 vs CA3 target gene, module score, and age-stratified DE analysis complete.
 
 ### Key Distinctions
 - **scRNA-seq cells ≠ Visium spots**: Visium spots may capture signal from multiple cells and are not equivalent to single cells.
@@ -133,6 +133,12 @@ Rscript run_pipeline.R
 - Treat Phase Spatial-04/05 inflammatory-gradient outputs as partial/RDS-approximated unless validation proves strict agreement.
 - The next reproduction priority is a hippocampal regional atlas stage for CA1, CA2, CA3, ML, GCL, Hilus, and derived DG; do not start mitochondrial analysis before this regional framework is validated.
 - After hippocampus reproduction is validated, migrate the same region-aware framework to the user's CA1/CA3/DG mitochondrial-gene question.
+- Phase Spatial-06: Hippocampal regional atlas completed (CA1=4671, CA2=565, CA3=2321, DG=2364).
+- Phase Spatial-07: Reproduction validation completed (GO_WITH_CAVEATS).
+- Phase Spatial-09: Target gene analysis plan completed (251 genes, 13 categories).
+- Phase Spatial-10: Target gene audit and region-aware expression summaries completed (231 exact-match, 20 missing).
+- Phase Spatial-11: CA1 vs CA3 pseudobulk DESeq2, module scores, and coupling analysis completed.
+- Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification completed (Young/Middle/Old).
 - Do not define mitochondrial gene lists, run mitochondrial DE, or interpret mitochondrial biology until a dedicated mitochondrial planning phase selects references, gene sources, assay/layer choices, and sample-level aggregation strategy.
 
 ### Reference Routing

@@ -15,6 +15,7 @@ The R branches share one R/renv project. Optional Python work must use its own a
 | `R/` | R source root; contains branch-specific subdirectories only | Tracked |
 | `R/scrna/` | Executable R source code for the scRNA-seq pipeline | Tracked |
 | `R/spatial/` | Executable R source code for spatial transcriptomics stages, using `s##_` script names | Tracked |
+| `R/spatial/s01_inspect_objects.R` through `s11b_age_grouping_ca1_ca3_de.R` | Spatial analysis scripts (Phases 01-11/11b) | Tracked |
 | `python/spatial/` | Optional future Python source code for Tangram/scanpy spatial workflows | Tracked source only |
 | `run_pipeline.R` | scRNA-seq pipeline runner only | Tracked |
 | `docs/` | Planning documents, reference registries, result summaries, and copied author code | Tracked, except copyrighted/local PDFs |
