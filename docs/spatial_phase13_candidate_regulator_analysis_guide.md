@@ -100,3 +100,142 @@ A gene can still be ranked for modules where it is NOT a member.
 5. Cross-reference with published literature for biological plausibility.
 6. Remember: these are **hypotheses for follow-up**, not conclusions.
 
+
+---
+
+## Phase 13b: CA3 Symmetric Display (Added 2026-06-05)
+
+Phase 13b corrected the display asymmetry in Phase 13. The underlying data (rho, scores, ranks)
+was already computed for both CA1 and CA3 in Phase 13. Phase 13b only added CA3-focused display outputs.
+
+### CA1 vs CA3 Symmetric Outputs
+
+**CA1-focused figures** (existing, from Phase 13):
+- F01: regulator_score heatmap (sorted by rank_CA1)
+- F03: top regulators dotplot (sorted by rank_CA1, sized by |rho_CA1|)
+- F04: module correlation matrix (rho_CA1, top 50 genes)
+- F07: Young stratified heatmap (CA1 samples, n=12)
+- F08: Old stratified heatmap (CA1 samples, n=12)
+- F09: score component breakdown (CA1 scaled components)
+- F10: sensitivity comparison (CA1 default/de-emphasis/rho-only)
+- F13: DE volcano (CA1 Old vs Young)
+- F14: spatial plots (top 5 by score_CA1_default)
+
+**CA3-focused figures** (added by Phase 13b):
+- F01b: CA3 regulator_score heatmap (sorted by rank_CA3)
+- F03b: CA3 top regulators dotplot (sorted by rank_CA3, sized by |rho_CA3|)
+- F04b: CA3 module correlation matrix (rho_CA3, top 50 genes)
+- F07b: CA3 Young stratified heatmap (n=3, CAUTION: severely underpowered)
+- F08b: CA3 Old stratified heatmap (n=11)
+- F09b: CA3 score component breakdown
+- F10b: CA3 sensitivity comparison
+- F13b: CA3 DE volcano (CA3 Old vs Young)
+- F14b: CA3 spatial plots (top 5 by score_CA3_default)
+
+**Region-agnostic figures** (unchanged):
+- F02: rho vs DE scatter (has both CA1+CA3 panels)
+- F05: self-correlation flag distribution
+- F06: candidate class distribution
+- F11: TF annotation coverage
+- F12: universe composition
+
+### Top Candidate CSVs (Phase 13b)
+
+- `phase13_top_candidates_CA1.csv`: sorted by rank_CA1
+- `phase13_top_candidates_CA3.csv`: sorted by rank_CA3
+- `phase13_top_candidates_concordant.csv`: sorted by combined_score (CA1+CA3)
+- `phase13_top_candidates_region_flipped.csv`: sorted by combined_score
+
+**CAUTION**: CSV rows are gene x module pairs, not unique genes.
+
+### Caveats
+
+- CA3 Young n=3 is severely underpowered. F07b results should be interpreted with extreme caution.
+- All candidate regulator associations are correlational (Spearman rho), not causal.
+- Complex V module excluded (all 16 genes missing from dataset).
+
+---
+
+
+
+
+---
+
+
+---
+
+
+---
+
+## Phase 13c: Age-Stratified Candidate Regulator Discovery
+
+### What Phase 13c Adds
+
+Phase 13/13b ranked candidate regulator-associated genes using all-age Spearman rho across CA1 (n=12) and CA3 (n=11).
+Phase 13c extends this with age-stratified analysis, computing separate rho values for Young and Old strata within each region.
+
+### Class Columns
+
+Phase 13c uses three class columns:
+
+- `primary_age_class`: Within-region age-specific classification (CA1_old_specific, CA1_young_specific, CA1_age_conserved, CA1_age_shifted, CA3_old_specific, CA3_young_specific, CA3_age_conserved, CA3_age_shifted, low_confidence, module_member_or_effector).
+- `region_age_class`: Cross-region within-age classification (Young_CA1_specific, Young_CA3_specific, Young_region_conserved, Old_CA1_specific, Old_CA3_specific, Old_region_conserved, none).
+- `candidate_class`: Same as primary_age_class (backward compatibility).
+- `secondary_class`: Additional classes when a pair falls into multiple categories (semicolon-separated).
+
+### Sample Size Labels
+
+Per-stratum labels (in the main table):
+- `sample_size_label_CA1_Young` = exploratory_small_n (n=4)
+- `sample_size_label_CA1_Old` = exploratory_moderate_n (n=8)
+- `sample_size_label_CA3_Young` = severely_underpowered_exploratory (n=3)
+- `sample_size_label_CA3_Old` = exploratory_moderate_n (n=8)
+
+In specialized output tables (old_specific, young_specific, etc.), the `sample_size_label` column uses the label for the relevant stratum.
+
+### How to Read Age-Stratified Tables
+
+- Each row is a gene x module pair with separate rho values for Young and Old.
+- Compare rho_Young vs rho_Old within the same gene-module to identify age-specific patterns.
+- `candidate_score_<stratum> = |rho_<stratum>|` is the primary ranking metric (NOT a p-value).
+- `pvalue_exploratory_*` and `qvalue_exploratory_*` columns are computed but NOT used for ranking or class assignment.
+
+### How to Interpret Rho Direction
+
+- Positive rho: gene expression and module score increase together.
+- Negative rho: gene expression increases while module score decreases.
+- In Old strata, this may reflect aging-related coupling changes.
+
+### Why Small n Matters
+
+- CA1 Young n=4 and CA3 Young n=3 are underpowered for Spearman correlation.
+- rho estimates in these strata are noisy. Compare with Old strata (n=8) for more stable estimates.
+- CA3 Young n=3: minimum p-value ~0.33 for perfect monotone correlation. Do NOT use CA3 Young p-values for filtering.
+
+### Candidate Classes
+
+- Age-specific (e.g., CA1_old_specific): strong rho in one age but NOT the other within same region.
+- Age-conserved: strong rho in both Young and Old, same direction.
+- Age-shifted: strong rho in both Young and Old, OPPOSITE direction.
+- Region-specific within age (e.g., Old_CA1_specific): strong rho in one region but NOT the other within same age.
+- `low_confidence`: |rho| < 0.3 in ALL 4 strata.
+- `module_member_or_effector`: gene is a member of the module gene set. Self-correlation excluded from regulator ranking.
+
+### Key Files
+
+- `phase13c_age_stratified_rho.csv` -- full rho table
+- `phase13c_age_stratified_scores.csv` -- scores with per-stratum sample_size_label columns
+- `phase13c_age_specific_candidate_classes.csv` -- all class columns (primary_age_class, region_age_class, candidate_class, secondary_class)
+- `phase13c_old_specific_candidates.csv` -- Old-specific candidates
+- `phase13c_young_specific_candidates.csv` -- Young-specific candidates
+- `phase13c_age_shifted_candidates.csv` -- candidates with rho sign reversal
+- `phase13c_region_shifted_by_age_candidates.csv` -- region-specific candidates within same age
+- `phase13c_top_candidates_by_region_age.csv` -- top 20 per stratum
+
+### Caveats
+
+1. These are ASSOCIATION-BASED candidate regulator-associated genes, NOT causal regulators.
+2. Age-stratified rho is still correlation. Age specificity adds biological plausibility but does NOT establish causality.
+3. CA3 Young n=3 -- all CA3 Young results carry `severely_underpowered_exploratory` label.
+4. CA1 Young n=4 -- all CA1 Young results carry `exploratory_small_n` label.
+

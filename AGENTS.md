@@ -93,7 +93,7 @@ Rscript run_pipeline.R
 - Memory: call `gc()` after large operations
 
 ## Spatial Transcriptomics Extension (Phase Spatial-00)
-**Status**: Stages Spatial-01 through Spatial-11/11b implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation, not strict STutility reproduction. Phase Spatial-07 handoff: GO_WITH_CAVEATS. Phase Spatial-10/11: CA1 vs CA3 target gene, module score, and age-stratified DE analysis complete.
+**Status**: Stages Spatial-01 through Spatial-11/11b implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation, not strict STutility reproduction. Phase Spatial-07 handoff: GO_WITH_CAVEATS. Phase Spatial-10/11: CA1 vs CA3 target gene, module score, and age-stratified DE analysis complete. Phase Spatial-13/13b/13c: candidate regulator-associated gene discovery complete (all-age + age-stratified).
 
 ### Key Distinctions
 - **scRNA-seq cells ≠ Visium spots**: Visium spots may capture signal from multiple cells and are not equivalent to single cells.
@@ -140,6 +140,9 @@ Rscript run_pipeline.R
 - Phase Spatial-11: CA1 vs CA3 pseudobulk DESeq2, module scores, and coupling analysis completed.
 - Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification completed (Young/Middle/Old).
 - Phase Spatial-12: **Planned but NOT executed**. Young vs Aged regional comparison across CA1 / CA3 / DG. See `docs/spatial_phase12_young_aged_region_comparison_plan.md`.
+- Phase Spatial-13: All-age candidate regulator-associated gene discovery completed (1,198 regulators x 11 modules, composite regulator_score, 6 candidate classes).
+- Phase Spatial-13b: CA3 mirror display figures and top-candidate CSVs completed.
+- Phase Spatial-13c: Age-stratified candidate regulator discovery completed (4 strata: CA1Y n=4, CA1O n=8, CA3Y n=3, CA3O n=8; 16 candidate classes; 9 figures; 29/29 validation PASS).
 - Do not define mitochondrial gene lists, run mitochondrial DE, or interpret mitochondrial biology until a dedicated mitochondrial planning phase selects references, gene sources, assay/layer choices, and sample-level aggregation strategy.
 
 ### Phase 12 Guardrails (pre-execution rules)
