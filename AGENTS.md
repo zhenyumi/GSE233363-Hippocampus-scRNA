@@ -99,7 +99,7 @@ Rscript run_pipeline.R
 - **scRNA-seq cells ≠ Visium spots**: Visium spots may capture signal from multiple cells and are not equivalent to single cells.
 - **Spots are not independent biological replicates**: spatial neighbors share local microenvironment
 - **Metadata must be inspected from actual objects**: do not assume assay names, spatial keys, image slots, or anatomical labels
-- **Consult .opencode/skills/ref-bio/ for authoritative reference routing** when planning methods
+- **Consult ref-bio + bio-* skills for authoritative reference routing** when planning methods. ref-bio YAML is a routing index only — plans must open and read the actual upstream docs, or record `failed_to_access`. Relevant `.opencode/skills/bio-*` skills must be inspected by task type. See "ref-bio Usage Rules" and "Bioinformatics Skills (bio-* skills) Usage Rules" below.
 - **Route labels matter**: if raw Space Ranger/Visium files are unavailable and analysis uses author-provided Seurat RDS image slots/coordinates instead, label the work as RDS-based reproduction/approximation, not strict author-code reproduction.
 
 ### Data Paths (expected, unverified)
@@ -112,7 +112,7 @@ Rscript run_pipeline.R
 ### Script Naming
 - Spatial scripts use `s##_` prefix (e.g., `s01_inspect_objects.R`), not `0##_`
 - Script pattern: load → inspect → record provenance/object structure → save lightweight summary → gc()
-- Before writing any spatial script: load one object, record its structure, consult ref-bio for reference routing
+- Before writing any spatial script: load one object, record its structure, consult ref-bio for reference routing (follow URLs to actual docs, not just YAML entries), and inspect relevant bio-* skills
 
 ### Memory Constraints (macOS 16GB)
 - Load one spatial object at a time
@@ -139,13 +139,85 @@ Rscript run_pipeline.R
 - Phase Spatial-10: Target gene audit and region-aware expression summaries completed (231 exact-match, 20 missing).
 - Phase Spatial-11: CA1 vs CA3 pseudobulk DESeq2, module scores, and coupling analysis completed.
 - Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification completed (Young/Middle/Old).
+- Phase Spatial-12: **Planned but NOT executed**. Young vs Aged regional comparison across CA1 / CA3 / DG. See `docs/spatial_phase12_young_aged_region_comparison_plan.md`.
 - Do not define mitochondrial gene lists, run mitochondrial DE, or interpret mitochondrial biology until a dedicated mitochondrial planning phase selects references, gene sources, assay/layer choices, and sample-level aggregation strategy.
 
-### Reference Routing
+### Phase 12 Guardrails (pre-execution rules)
+
+When Phase 12 is executed, the following rules apply:
+
+- **Primary analysis**: Region-stratified Old vs Young pseudobulk DESeq2 within CA1 / CA3 / DG.
+- **Model**: `~ Age` (two-group unpaired) within each region. Age and GEMgroup are colinear, making `~ GEMgroup + Age` rank-deficient.
+- **log2FC direction**: positive = Old/Aged higher, negative = Young higher.
+- **Replicate unit**: GEMgroup-level pseudobulk. Spots are NOT biological replicates.
+- **DG definition**: ML + GCL + Hilus (2,364 spots).
+- **CA3 Young n=3**: Must be labeled `primary_with_caution_young_n3` in all outputs.
+- **Middle excluded**: Middle is excluded from Phase 12 primary contrast.
+- **Complex V / Atp5 missing caveat**: Must be carried forward from Phase 11.
+- **limma/edgeR/interaction models**: Sensitivity/exploratory only. Primary remains DESeq2 `~ Age`.
+- **No spot-level inference**: All DESeq2 uses pseudobulk aggregation.
+- **No WholeBrain**: Only `seurat_Visium_Hippo_All.rds` is loaded.
+
+### ref-bio Usage Rules (authoritative reference routing)
+
+**ref-bio is NOT a read-only YAML index.** The `.opencode/skills/ref-bio/reference-pack/references.link-only.yaml` is a routing table only — it maps source IDs to URLs. A link-only entry is NOT proof of review.
+
+When planning a method or checking documentation:
+1. Search `references.link-only.yaml` or `indexes/topic-map.yaml` for the relevant source_id.
+2. Follow the upstream URL to the official documentation.
+3. Actually open and read the relevant sections of the official docs/vignettes/guides.
+4. Record findings in a structured review table.
+
+**Plan documents MUST record for each consulted source:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| source_title | Yes | e.g., "DESeq2 Official Vignette" |
+| url | Yes | Full URL to the specific page consulted |
+| reviewed_status | Yes | `reviewed` / `partially_reviewed` / `failed_to_access` / `not_reviewed` |
+| specific_section | Yes | e.g., "Standard workflow", "Multi-factor designs" |
+| design_decision_affected | Yes | Which decisions this source validated or changed |
+
+**Failure handling**:
+- If a URL returns 404 or is inaccessible: record `reviewed_status = failed_to_access`, record the failure reason, and do NOT claim it was reviewed.
+- If a URL requires network access that is not available: record `failed_to_access_network_unavailable`.
+- link-only YAML entries serve as routing/index only; they are NOT a substitute for actual document review.
+
+**Reference routing locations**:
 - Project-specific refs (paper, GitHub, GEO, Zenodo): see `docs/reference_sources.md`
 - Authoritative reference catalog: `.opencode/skills/ref-bio/reference-pack/references.link-only.yaml`
+- ref-bio indexes: `.opencode/skills/ref-bio/reference-pack/indexes/`
 - Seurat spatial vignettes: https://satijalab.org/seurat/
 - OSTA (Orchestrating Spatial Transcriptomics Analysis): https://bioconductor.org/books/release/OSTA/
+
+### Bioinformatics Skills (bio-* skills) Usage Rules
+
+**There is NO single `.opencode/skills/bioskill/` directory.** Do not assume a unified "bioskill" folder exists.
+
+The project's bioinformatics skills are a collection of directories under `.opencode/skills/bio-*`. These are skill-specific instruction files (SKILL.md) with optional `references/usage-guide.md` companion documents.
+
+**Plan phase workflow for bio-* skills:**
+1. Identify the task type (e.g., differential expression, spatial statistics, visualization).
+2. List relevant bio-* skills by matching task to skill name. Key skills for this project include:
+   - `bio-differential-expression-deseq2-basics` — DESeq2 design, contrasts, shrinkage
+   - `bio-differential-expression-de-results` — result extraction, padj handling, filtering
+   - `bio-differential-expression-de-visualization` — volcano, MA, PCA plots
+   - `bio-spatial-transcriptomics-spatial-preprocessing` — Python/Squidpy (conceptual only for R pipeline)
+   - `bio-spatial-transcriptomics-spatial-data-io` — Python/Squidpy (conceptual only)
+   - `bio-spatial-transcriptomics-spatial-visualization` — Python/Squidpy (conceptual only)
+   - `bio-spatial-transcriptomics-spatial-statistics` — Python/Squidpy (conceptual only)
+   - `bio-workflows-spatial-pipeline` — Python/Squidpy (conceptual QC checkpoint philosophy)
+   - `bio-data-visualization-volcano-and-ma-plots` — volcano plot conventions
+   - `bio-data-visualization-heatmaps-clustering` — heatmap rendering
+3. Read only the relevant SKILL.md files (NOT bulk-read all skills).
+4. Read companion `references/usage-guide.md` if the skill references one.
+5. Record in the plan document:
+   - skill path
+   - status: `inspected` / `missing` / `not_relevant`
+   - key guidance used
+   - impact on plan
+
+**IMPORTANT**: Skills that are Python/Squidpy-based (spatial-*) provide only conceptual guidance for this R/Seurat project. They should NOT be treated as direct execution instructions. For example, `bio-spatial-transcriptomics-spatial-statistics` documents Python Squidpy functions — it cannot be used directly in R. Its conceptual framework (Moran's I, spatial autocorrelation) may still inform the "spots ≠ replicates" principle.
 
 ### Optional Python / Tangram Route
 - Python is not required for current Spatial-01 through Spatial-07 RDS-based stages.

@@ -3,6 +3,25 @@
 This document is a **reference routing guide**, not an exhaustive bibliography.
 For authoritative reference routing, consult `.opencode/skills/ref-bio/reference-pack/references.link-only.yaml`.
 
+## How to Use This Registry
+
+This file is a **registry and routing list** — it maps project-specific references and tool names to source IDs and upstream URLs. It is NOT a record of what has been reviewed.
+
+**A source listed here is NOT "reviewed" unless it was actually opened and read during a planning or execution task.** To claim a source was reviewed:
+
+1. Follow the URL to the official documentation.
+2. Read the relevant sections.
+3. Record in the plan document:
+   - **source_title** (e.g., "DESeq2 Official Vignette")
+   - **url** (full URL to the specific page consulted)
+   - **reviewed_status**: `reviewed` / `partially_reviewed` / `failed_to_access` / `not_reviewed`
+   - **specific_section** (e.g., "Standard workflow", "Multi-factor designs")
+   - **design_decision_affected** (which decisions this source validated or changed)
+4. If a URL is inaccessible: record `reviewed_status = failed_to_access` and the reason. Do NOT claim it was reviewed.
+5. Link-only entries and this registry are routing aids — they do not substitute for actual source review.
+
+See `AGENTS.md` "ref-bio Usage Rules" and `docs/agent_reference_workflow.md` for the full reference-first planning workflow.
+
 ## Project-Specific References
 
 | Reference | Source | Notes |

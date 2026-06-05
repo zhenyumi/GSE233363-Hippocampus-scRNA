@@ -67,8 +67,13 @@ Before creating any spatial script:
 
 1. **Obtain spatial objects** — place RDS files in `data/raw/spatial/`
    or use the current canonical author-provided path `data/raw/GSE233363_official/`
-2. **Consult ref-bio** — check `.opencode/skills/ref-bio/reference-pack/references.link-only.yaml`
-   for authoritative reference routing on the method you plan to implement
+2. **Consult ref-bio and bio-* skills** — the `.opencode/skills/ref-bio/reference-pack/references.link-only.yaml`
+   YAML is a **routing/index only**, not a substitute for reviewing official docs.
+   For each method: (a) follow the ref-bio source URL to the actual vignette/guide,
+   (b) open and read the relevant sections, (c) record `reviewed_status`, specific section/topic,
+   and design impact in the plan document per AGENTS.md. Also inspect relevant
+   `.opencode/skills/bio-*` skills by task type (see `docs/agent_reference_workflow.md`).
+   If a URL is inaccessible, record `failed_to_access` — do not claim reviewed.
 3. **Record object structure** — run `R/spatial/s01_inspect_objects.R` for DG and Hippo;
    outputs are written under `data/processed/spatial/inspection/`
 4. **Choose methods based on actual data** — do not assume assay structure, spatial keys,

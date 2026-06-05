@@ -65,7 +65,7 @@ Current input:
 
 - `data/raw/GSE233363_official/seurat_Visium_DG_All.rds`
 - `data/raw/GSE233363_official/seurat_Visium_Hippo_All.rds`
-- `docs/target_genes.csv` — 251 mitochondrial/ribosomal/translation genes (13 categories, GBK encoding)
+- `docs/target_genes.csv` — 251 mitochondrial/ribosomal/translation genes (13 categories, GBK encoding). **This CSV is the canonical pipeline input.** `docs/target_genes.xlsx` is the original manual file (gitignored, not consumed by scripts).
 
 Current scope:
 
@@ -76,8 +76,18 @@ Current scope:
 - Phase Spatial-09: Mitochondrial target gene analysis plan.
 - Phase Spatial-10: Target gene audit and region-aware expression summaries.
 - Phase Spatial-11: CA1 vs CA3 pseudobulk DE, module scores, and coupling analysis.
-- Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification.
+- Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification (PASS_WITH_WARNINGS).
+- Phase Spatial-12: **Planned but NOT executed**. Young vs Aged regional comparison across CA1 / CA3 / DG.
 - WholeBrain remains inventory-only unless a separate user-approved plan says otherwise.
+
+### Reference-First Methodology Rules
+
+This project uses two skill systems for planning:
+
+- **ref-bio** (`.opencode/skills/ref-bio/`): Routes to authoritative upstream docs (DESeq2 vignettes, Seurat spatial vignettes, OSTA). Plans must open and review the actual documents — link-only YAML entries are not sufficient proof of review. Every consulted source must be recorded with `reviewed_status`, URL, specific section, and design impact.
+- **bio-* skills** (`.opencode/skills/bio-*/`): Skill-specific guidance for bioinformatics tasks. There is NO single `bioskill/` directory. Plan phases select relevant bio-* skills by task type (e.g., `bio-differential-expression-deseq2-basics` for DE design). Python/Squidpy skills provide conceptual guidance only for this R/Seurat project.
+
+See `AGENTS.md` for full rules and `docs/agent_reference_workflow.md` for the reference-first planning workflow.
 
 Scripts:
 

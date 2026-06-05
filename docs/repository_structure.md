@@ -27,6 +27,8 @@ The R branches share one R/renv project. Optional Python work must use its own a
 | `reports/` | Generated local reports and logs | Ignored |
 | `cache/` | Short-lived scratch files and temporary outputs | Ignored |
 | `renv.lock`, `.Rprofile` | Reproducible R environment entrypoints | Tracked |
+| `.opencode/skills/bio-*/` | Local bioinformatics skills (DESeq2, spatial, visualization, pipelines) | Tracked |
+| `.opencode/skills/ref-bio/` | Reference routing catalog (link-only YAML + indexes); not a substitute for reviewing official docs | Tracked |
 | `renv/library/`, `renv/staging/`, `renv/sandbox/` | Local package libraries/caches | Ignored |
 | `.venv/`, `venv/`, `__pycache__/`, `.ipynb_checkpoints/` | Local Python environments/caches | Ignored |
 
@@ -56,9 +58,14 @@ Generated files should not be committed unless they are intentionally promoted i
 ## Temporary File Rules
 
 - Do not write temporary files into the repository root.
-- Do not write generated CSV/RDS/PDF/PNG/log files into `R/`, `R/scrna/`, `R/spatial/`, `python/`, `docs/`, or `gene_lists/`.
+- Do not write generated CSV/RDS/PDF/PNG/log files into `R/`, `R/scrna/`, `R/spatial/`, `python/`, `docs/`, `gene_lists/`, or `.opencode/skills/`.
 - Use `cache/` or `cache/spatial/` for short-lived scratch files, and remove them when they are no longer needed.
 - Keep `Rplots.pdf` out of the repository root; scripts that create PDF output should use explicit output paths and close graphics devices.
+
+## Local Skills Notes
+
+- `.opencode/skills/bio-*`: Per-task bioinformatics instructions. There is NO single `bioskill/` directory; each skill is a `bio-<category>-<topic>/` folder with a `SKILL.md` file. Plan phases should select relevant skills by task type.
+- `.opencode/skills/ref-bio/`: Reference routing catalog. The `references.link-only.yaml` file maps source IDs to upstream URLs. Plans must follow URLs to actual official docs — link-only entries are not sufficient proof of review. See `AGENTS.md` for full ref-bio usage rules.
 
 ## R Script Rules
 

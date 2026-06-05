@@ -4,8 +4,8 @@
 > **Source paper**: Wu et al. (2025) *Nature Neuroscience* 28:415–430  
 > **DOI**: https://doi.org/10.1038/s41593-024-01848-4  
 > **GEO**: GSE233363  
-> **Plan version**: 3.2 (2026-06-03)  
-> **Status**: Stages Spatial-01 through Spatial-11/11b have been implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available. Phase Spatial-07 handoff: GO_WITH_CAVEATS. Phase Spatial-10/11: CA1 vs CA3 target gene, module score, and age-stratified DE analysis complete.
+> **Plan version**: 3.3 (2026-06-04)  
+> **Status**: Stages Spatial-01 through Spatial-11/11b have been implemented for DG/Hippo. Phase Spatial-05 is an RDS-based reproduction/approximation because raw Space Ranger/Visium files required by the author STutility code are not currently available. Phase Spatial-07 handoff: GO_WITH_CAVEATS. Phase Spatial-10/11: CA1 vs CA3 target gene, module score, and age-stratified DE analysis complete. Phase Spatial-12: Planned but NOT executed — Young vs Aged regional comparison across CA1 / CA3 / DG.
 
 > **Figures output convention**: All spatial figures use `figures/spatial/` (not `figures/stage-2/spatial/`). Rationale: AGENTS.md defines `figures/spatial/` as the spatial figures directory; `figures/stage-2/` is reserved for the scRNA-seq pipeline. Spatial analysis is a distinct pipeline branch and gets its own top-level spatial directory.
 
@@ -510,6 +510,32 @@ Perform age-stratified (Young/Middle/Old) pseudobulk DESeq2 analysis comparing C
 ### Script
 - `R/spatial/s11b_age_grouping_ca1_ca3_de.R`
 
+## Phase Spatial-12: Young vs Aged Regional Comparison across CA1 / CA3 / DG
+
+### Status
+**Planned but NOT executed.** See `docs/spatial_phase12_young_aged_region_comparison_plan.md` (v1.2, 2026-06-04) for full details.
+
+### Goal
+Region-stratified Old vs Young pseudobulk DESeq2 within CA1, CA3, and DG. Cross-region log2FC comparison, target gene category summaries, module score age effects, and coupling analysis.
+
+### Key Caveats Carried Forward
+- **RDS-based approximation** (Phase 05): Not strict author-code reproduction.
+- **Complex V missing**: 16 Atp5* genes absent from Spatial assay.
+- **CA3 Young n=3**: Must be labeled `primary_with_caution_young_n3`.
+- **No spot-level inference**: All DESeq2 uses GEMgroup-level pseudobulk.
+- **ref-bio/bio-skills**: Must be used correctly in planning (see AGENTS.md).
+
+### Guardrails
+- Primary: DESeq2 `~ Age` within each region (Age and GEMgroup are colinear).
+- log2FC: positive = Old higher, negative = Young higher.
+- Middle excluded from primary contrast.
+- limma/edgeR/interaction = sensitivity/exploratory only.
+- No WholeBrain; load only `seurat_Visium_Hippo_All.rds`.
+- DG = ML + GCL + Hilus (2,364 spots).
+
+### Script (to create)
+- `R/spatial/s12_young_aged_region_comparison.R`
+
 ## Global Constraints for Future Phases
 
 The following constraints apply to all future spatial phases:
@@ -551,6 +577,8 @@ Phase 10 (Gene Audit)   ← depends on 09; target gene audit + region summaries
 Phase 11 (CA1/CA3 DE)   ← depends on 10; pseudobulk DE + module scores + coupling
     ↓
 Phase 11b (Age DE)      ← depends on 11; age-stratified CA1 vs CA3 DE + cross-age patterns
+    ↓
+Phase 12 (Young/Aged)    ← depends on 10/11/11b; Old vs Young within CA1/CA3/DG (planned, NOT executed)
 ```
 
 Phases 03 and 04 can run in parallel after Phase 02 completes.
