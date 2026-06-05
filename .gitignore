@@ -60,3 +60,4 @@ docs/original_paper.pdf
 
 # === Raw manual files (CSV is canonical pipeline input) ===
 docs/target_genes.xlsx
+data/report/

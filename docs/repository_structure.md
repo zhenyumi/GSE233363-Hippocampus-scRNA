@@ -22,6 +22,7 @@ The R branches share one R/renv project. Optional Python work must use its own a
 | `docs/original_code_from_paper/` | Read-only author-code reference copied for reproduction | Tracked when license/copyright allows |
 | `gene_lists/` | Small reviewed gene-list source files used by scripts | Tracked |
 | `data/` | Raw input data and generated processed tables/RDS files | Ignored |
+| `data/report/` | Generated report bundles (markdown + PDF) for integration phases | Ignored |
 | `figures/` | Generated figures from scRNA-seq or spatial scripts | Ignored |
 | `results/` | Generated analysis result exports | Ignored |
 | `reports/` | Generated local reports and logs | Ignored |

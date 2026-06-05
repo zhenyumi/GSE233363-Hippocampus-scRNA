@@ -78,6 +78,8 @@ Current scope:
 - Phase Spatial-11: CA1 vs CA3 pseudobulk DE, module scores, and coupling analysis.
 - Phase Spatial-11b: Age-grouping stratified DE and cross-age pattern classification (PASS_WITH_WARNINGS).
 - Phase Spatial-12: **Planned but NOT executed**. Young vs Aged regional comparison across CA1 / CA3 / DG.
+- Phase Spatial-13/13b/13c: Candidate regulator-associated gene discovery (all-age + age-stratified).
+- Phase Spatial-14: Candidate regulator integration report. Report bundle in `data/report/phase14_candidate_regulator_report/` (markdown + PDF). Report-level only, no new analysis.
 - WholeBrain remains inventory-only unless a separate user-approved plan says otherwise.
 
 ### Reference-First Methodology Rules

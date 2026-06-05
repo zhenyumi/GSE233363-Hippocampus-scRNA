@@ -47,6 +47,7 @@ ferroptosis analysis in mouse dentate gyrus neurogenesis using scRNA-seq (GSE233
 - Custom data: `data/raw/GSE233363_custom/` (gitignored, independently aligned from FASTQ — USED by pipeline)
 - Official data: `data/raw/GSE233363_official/` (gitignored, author-provided Zenodo files — for reference)
 - Processed: `data/processed/` (gitignored, generated)
+- Report bundles: `data/report/` (gitignored, generated markdown/PDF integration reports)
 - Figures: `figures/stage-2/` (gitignored, generated)
 - Gene lists: `gene_lists/` (committed)
 
@@ -143,7 +144,9 @@ Rscript run_pipeline.R
 - Phase Spatial-13: All-age candidate regulator-associated gene discovery completed (1,198 regulators x 11 modules, composite regulator_score, 6 candidate classes).
 - Phase Spatial-13b: CA3 mirror display figures and top-candidate CSVs completed.
 - Phase Spatial-13c: Age-stratified candidate regulator discovery completed (4 strata: CA1Y n=4, CA1O n=8, CA3Y n=3, CA3O n=8; 16 candidate classes; 9 figures; 29/29 validation PASS).
+- Phase Spatial-14: Candidate regulator integration report completed. Report bundle in `data/report/phase14_candidate_regulator_report/` (markdown + PDF). 11 summary tables, 18 figures, 1175 unique prioritized genes. CA3 Young n=3 caveat enforced. No causal claims. report-level only, no new bioinformatics analysis.
 - Do not define mitochondrial gene lists, run mitochondrial DE, or interpret mitochondrial biology until a dedicated mitochondrial planning phase selects references, gene sources, assay/layer choices, and sample-level aggregation strategy.
+- Report bundles use `data/report/` (gitignored, generated). This is separate from `reports/` (audit logs) and `docs/` (committed plan docs).
 
 ### Phase 12 Guardrails (pre-execution rules)
 
