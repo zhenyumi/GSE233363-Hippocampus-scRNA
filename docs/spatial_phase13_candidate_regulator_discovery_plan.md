@@ -270,10 +270,9 @@ If gene g is a member of module m's gene set (per `module_gene_set_final_audit.c
 **Strategy B (only if explicitly approved)**: Use leave-one-out module scores where gene g is removed from module m's gene set before recomputing the module score. Flag such genes with `readout_member_flag = TRUE`. This is only viable if the execution phase can legitimately recompute module scores on the spot-level data and re-aggregate.
 
 **Regardless of strategy**: All outputs MUST include a `self_correlation_flag` column indicating:
-- `regulator_candidate` — gene is NOT a member of the correlated module's gene set
-- `module_member_or_effector` — gene IS a member; ρ is self-correlation
+- `regulator_candidate` — gene is NOT a member of the correlated module's gene set (includes genes with weak correlation; low-confidence ranking is handled by `candidate_class = low_confidence`, not by this flag)
+- `module_member_or_effector` — gene IS a member; ρ is self-correlation; rank is NA for own module
 - `target_gene_candidate` — gene is in `target_genes.csv` but NOT in the correlated module's gene set (may be an effector in a different pathway)
-- `low_confidence_self_correlation` — gene is a member; ρ cannot be interpreted as regulator evidence
 
 **Target gene membership**: Genes in `target_genes.csv` must NOT receive a positive weight in the `regulator_score`. They can be reported in a separate target/readout table and used as an annotation column. Target membership provides context ("this gene is involved in mitochondrial biology") but does not constitute upstream regulatory evidence.
 
@@ -464,7 +463,7 @@ For genes appearing in top 10% (by regulator_score) for ≥3 modules:
 - **Self-correlation excluded**: Module gene-set members are excluded from regulator ranking for that module (Strategy A, §5.3)
 - **Target genes annotated separately**: Target gene membership is a separate annotation column, not a ranking weight
 - **TF annotation = eligibility**: Being in DoRothEA/CollecTRI qualifies a gene for `universe_regulator`; it does not add weight
-- **Output file `composite_score_components.csv`** must include every component (ρ, DE_age, DE_region, each scaled value) so the provenance of every score is traceable
+- **Output file `phase13_regulator_score_default.csv`** must include every component (ρ, DE_age, DE_region, each scaled value) so the provenance of every score is traceable
 
 ---
 
@@ -804,10 +803,10 @@ Before running any R code, verify:
 | E1 | Install new packages: dorothea, decoupleR, org.Mm.eg.db (renv::install protocol, §12.3) | Bioconductor | Package version audit |
 | E1b | (CONDITIONAL) Install clusterProfiler, msigdbr ONLY if exploratory enrichment approved | Bioconductor/CRAN | Package version audit |
 | E2 | Load Phase 11 pseudobulk counts, read module_gene_set_final_audit.csv, Phase 12 module scores, Phase 11/12 DE results | RDS/CSV | In-memory data |
-| E3 | Define three universes (§6.1); build TF annotation table from DoRothEA/CollecTRI/GO | E2 data + Bioconductor packages | `candidate_universe.csv`, `tf_annotation_audit.csv` |
-| E4 | Read actual module name list from audit files; compute GEMgroup-level Spearman ρ (gene × module × region) for all three universes; apply self-correlation exclusion (§5.3) | E2 data | `correlation_all_genes.csv`, `correlation_age_stratified.csv` |
-| E5 | Compute regulator_score with 3 sensitivity configurations (§8.1); rank genes in `universe_regulator` | E4 + DE results | `candidate_rankings.csv`, `composite_score_components.csv`, `sensitivity_overlap.csv` |
-| E6 | Assign candidate classes (§9.1); generate `target_gene_module_association.csv` | E5 rankings + target gene audit | `candidate_classes.csv`, `target_gene_module_association.csv` |
+| E3 | Define three universes (§6.1); build TF annotation table from DoRothEA/CollecTRI/GO | E2 data + Bioconductor packages | `phase13_universe_composition.csv`, `phase13_tf_annotation_coverage.csv` |
+| E4 | Read actual module name list from audit files; compute GEMgroup-level Spearman ρ (gene × module × region) for all three universes; apply self-correlation exclusion (§5.3) | E2 data | `phase13_spearman_rho_all.csv`, `phase13_spearman_rho_universe_regulator.csv` |
+| E5 | Compute regulator_score with 3 sensitivity configurations (§8.1); rank genes in `universe_regulator` | E4 + DE results | `phase13_regulator_score_default.csv`, `phase13_regulator_score_sensitivity.csv` |
+| E6 | Assign candidate classes (§9.1); generate `target_gene_module_association.csv` | E5 rankings + target gene audit | `phase13_candidate_classes.csv`, `phase13_self_correlation_flags.csv`, `phase13_target_gene_module_association.csv` |
 | E7 | Primary figures (correlation heatmap, ranking dotplot, scatter, score breakdown, sensitivity) | E4-E6 | 7 PNG figures (PDF optional) |
 | E8 | Age-stratified figures (with small-n labels) | E4 (age-stratified) | 2 PNG figures |
 | E9 | Supporting figures (expression heatmap, boxplot, UpSet, rho histogram) | E2-E6 | 4 PNG figures |
@@ -815,7 +814,7 @@ Before running any R code, verify:
 | E11 | Spatial exploratory figures (Route 5) | E6 + Hippo RDS | 4 PNG figures; rm(Hippo_obj); gc() |
 | E12 | (CONDITIONAL) Exploratory enrichment (Route 4): GO, GSEA ONLY if approved after E6 review | E6 rankings | 2 figures + enrichment CSV |
 | E13 | Generate interpretation guide | All outputs | `spatial_phase13_candidate_regulator_analysis_guide.md` |
-| E14 | Final validation, provenance, renv snapshot, Rplots.pdf cleanup (§10.6) | All outputs | `phase13_provenance.csv`, `phase13_validation_summary.txt` |
+| E14 | Final validation, provenance, renv snapshot, Rplots.pdf cleanup (§10.6) | All outputs | `phase13_provenance.csv`, `phase13_provenance.txt`, `phase13_validation_summary.csv`, `phase13_final_report.txt` |
 
 **Memory management**:
 - Load Hippo RDS ONLY in E10-E11 (last steps requiring large object; spatial visualization only)
@@ -831,18 +830,22 @@ Before running any R code, verify:
 
 | File | Description |
 |------|-------------|
-| `candidate_universe.csv` | All genes with universe membership flags (`in_universe_all`, `in_universe_regulator`, `in_universe_target`, `tf_confidence`, `target_gene_category`) |
-| `correlation_all_genes.csv` | Per-gene, per-module, per-region Spearman ρ, p-value, q_exploratory, n, self_correlation_flag |
-| `correlation_age_stratified.csv` | Age-stratified ρ with n labels |
-| `candidate_rankings.csv` | Ranked candidates in `universe_regulator` with regulator_score (3 weight configurations) |
-| `candidate_classes.csv` | Candidate class assignments (§9.1) |
-| `composite_score_components.csv` | Per-gene component scores (raw ρ, scaled ρ, raw DE log2FC, scaled DE log2FC) — every component traceable |
-| `sensitivity_overlap.csv` | Top-20 overlap across 3 weight configurations |
-| `target_gene_module_association.csv` | Target genes (separate from regulator ranking) with ρ per module, self_correlation_flag, DE evidence |
-| `tf_annotation_audit.csv` | DoRothEA/CollecTRI/GO TF mapping audit with confidence levels |
-| `phase13_provenance.csv` | Provenance record |
-| `phase13_validation_summary.txt` | Validation check results |
-| `phase13_final_report.txt` | Summary statistics: N genes in each universe, top candidates per class, caveat flags |
+| `phase13_spearman_rho_all.csv` | Per-gene, per-module, per-region Spearman ρ, p-value, q_exploratory, self_correlation_flag (all universe_all genes) |
+| `phase13_spearman_rho_universe_regulator.csv` | Regulator universe subset with DE evidence, scaled scores, candidate classes |
+| `phase13_regulator_score_default.csv` | Ranked candidates with default config scores and rank_CA1/rank_CA3 (module members have NA rank for own module) |
+| `phase13_regulator_score_sensitivity.csv` | All 3 weight configs (default, DE-emphasis, ρ-only) |
+| `phase13_candidate_classes.csv` | Candidate class assignments (§9.1) |
+| `phase13_self_correlation_flags.csv` | Self-correlation flags (3 values: regulator_candidate, module_member_or_effector, target_gene_candidate) |
+| `phase13_target_gene_module_association.csv` | Target genes (separate from regulator ranking) with ρ per module, self_correlation_flag, DE evidence |
+| `phase13_tf_annotation_coverage.csv` | DoRothEA/CollecTRI/GO TF mapping audit |
+| `phase13_universe_composition.csv` | Universe sizes (all, regulator, target) |
+| `phase13_go_enrichment_results.csv` | GO enrichment results (conditional; only if clusterProfiler available) |
+| `phase13_provenance.csv` | Machine-readable provenance (input paths, package versions, renv.lock MD5, module/sample counts, TF source status) |
+| `phase13_provenance.txt` | Human-readable provenance record |
+| `phase13_validation_summary.csv` | Validation check results (PASS/WARN/FAIL with details) |
+| `phase13_final_report.txt` | Universe sizes, module score columns, missing/omitted modules, candidate classes by pair count and unique gene count, forbidden-term check, validation summary |
+| `pseudobulk_sample_manifest.csv` | GEMgroup → Age, Region mapping (generated from pseudobulk column names) |
+| `gene_presence_audit.csv` | Which target genes are present in pseudobulk data |
 
 ### 16.2 Figure Outputs (`figures/spatial/phase13_candidate_regulator/`)
 

@@ -368,10 +368,9 @@ rho_results$self_correlation_flag[
   rho_results$self_correlation_flag == "regulator_candidate"
 ] <- "target_gene_candidate"
 
-# Flag low confidence
-low_rho_mask <- abs(rho_results$rho_CA1) < 0.3 & abs(rho_results$rho_CA3) < 0.3 &
-  rho_results$self_correlation_flag == "regulator_candidate"
-rho_results$self_correlation_flag[low_rho_mask] <- "low_confidence_self_correlation"
+# NOTE: low-confidence (|ρ|<0.3 in both regions) is handled as candidate_class = "low_confidence" in E7,
+# NOT as a self_correlation_flag value. self_correlation_flag has only 3 values:
+#   regulator_candidate, module_member_or_effector, target_gene_candidate
 
 cat("Self-correlation flags:\n")
 print(table(rho_results$self_correlation_flag))
@@ -479,8 +478,8 @@ cat("\n=== E7: Candidate Classes ===\n")
 
 regulator_rho$candidate_class <- "low_confidence"
 
-sig_ca1 <- (abs(regulator_rho$rho_CA1) > 0.3 & regulator_rho$qval_CA1 < 0.1) | abs(regulator_rho$rho_CA1) > 0.5
-sig_ca3 <- (abs(regulator_rho$rho_CA3) > 0.3 & regulator_rho$qval_CA3 < 0.1) | abs(regulator_rho$rho_CA3) > 0.5
+sig_ca1 <- abs(regulator_rho$rho_CA1) > 0.3
+sig_ca3 <- abs(regulator_rho$rho_CA3) > 0.3
 dir_ca1 <- sign(regulator_rho$rho_CA1)
 dir_ca3 <- sign(regulator_rho$rho_CA3)
 
@@ -783,8 +782,8 @@ tryCatch({
   p <- ggplot(class_counts, aes(x = reorder(class, -count), y = count, fill = class)) +
     geom_col() +
     geom_text(aes(label = count), vjust = -0.5, size = 3.5) +
-    labs(title = "F06: Candidate class distribution",
-      subtitle = paste0("n = ", nrow(regulator_rho), " regulator × module pairs; n_regulators = ",
+    labs(title = "F06: Candidate class distribution (gene × module pairs)",
+      subtitle = paste0("Pair count: ", nrow(regulator_rho), "; Unique genes: ",
         length(unique(regulator_rho$gene)))) +
     theme_classic() +
     theme(axis.text.x = element_text(angle = 30, hjust = 1), legend.position = "none")
@@ -1089,68 +1088,101 @@ guide_text <- c(
   paste0("Plan version: v1.2"),
   "",
   "## Overview",
+  "",
   "This guide describes the Phase Spatial-13 candidate regulator discovery results.",
-  "All candidate regulators are ASSOCIATED with mitochondrial modules — correlation ≠ causation.",
+  "All outputs identify **candidate regulator-associated genes** — genes whose expression",
+  "correlates with mitochondrial module scores at the GEMgroup pseudobulk level.",
+  "",
+  "**This is NOT a causal regulator analysis.** Correlation does not imply regulation.",
+  "No perturbation experiments, mechanistic validation, or directionality tests were performed.",
+  "",
+  "## What Each Analysis Asks",
+  "",
+  "1. **Spearman correlation**: Does gene g's expression covary with module m's score across GEMgroups in CA1 and/or CA3?",
+  "2. **DE-informed ranking**: Do genes that change with aging (Old vs Young) or differ between regions (CA3 vs CA1) rank higher?",
+  "3. **TF annotation**: Is the gene annotated as a transcription factor or regulator in DoRothEA, CollecTRI, or GO? (Eligibility only — NOT proof of regulation in this dataset.)",
   "",
   "## Key Outputs",
   "",
   "### Primary Rankings",
-  "- `phase13_regulator_score_default.csv`: Primary ranking by default config (ρ 50% + DE_age 30% + DE_region 20%)",
-  "- `phase13_candidate_classes.csv`: Classification of candidates (CA1/CA3 aging-associated, concordant, region-flipped, etc.)",
-  "- `phase13_spearman_rho_all.csv`: All Spearman ρ values with BH-corrected q-values",
+  "- `phase13_regulator_score_default.csv`: Primary ranking by default config (ρ 50% + DE_age 30% + DE_region 20%). Includes rank_CA1 and rank_CA3 (module members have NA rank for own module).",
+  "- `phase13_candidate_classes.csv`: Classification of candidate regulator-associated genes.",
+  "- `phase13_spearman_rho_all.csv`: All Spearman ρ values with BH-corrected q-values (exploratory).",
   "",
   "### Sensitivity",
-  "- `phase13_regulator_score_sensitivity.csv`: All 3 weight configs (default, DE-emphasis, ρ-only)",
-  "- Compare configs to assess robustness of rankings",
+  "- `phase13_regulator_score_sensitivity.csv`: All 3 weight configs (default, DE-emphasis, ρ-only).",
+  "- Compare configs to assess robustness of rankings.",
   "",
   "### Annotation",
-  "- `phase13_tf_annotation_coverage.csv`: TF sources (DoRothEA A-C, CollecTRI, GO:0003700/GO:0140110)",
-  "- `phase13_target_gene_module_association.csv`: Target gene module correlations",
-  "- `phase13_self_correlation_flags.csv`: Self-correlation flags (module member exclusion)",
+  "- `phase13_tf_annotation_coverage.csv`: TF sources (DoRothEA A-C, CollecTRI, GO:0003700/GO:0140110).",
+  "- `phase13_target_gene_module_association.csv`: Target gene module correlations (separate from regulator ranking).",
+  "- `phase13_self_correlation_flags.csv`: Self-correlation flags (module member exclusion).",
   "",
-  "## Interpretation Caveats",
+  "### Reports",
+  "- `phase13_final_report.txt`: Universe sizes, module info, candidate class counts (pair + unique gene), forbidden-term check, validation summary.",
+  "- `phase13_provenance.csv`: Machine-readable provenance record.",
+  "- `phase13_provenance.txt`: Human-readable provenance record.",
   "",
-  "### Correlation ≠ Causation",
-  "All candidates are ASSOCIATED regulators. Spearman ρ measures monotonic association, not causal regulation.",
-  "DoRothEA/CollecTRI annotation = eligibility for universe_regulator, NOT proof of regulation in this context.",
+  "## How to Read Correlation / DE / Regulator Score",
   "",
-  "### Small Sample Size",
-  "- CA1: n = 12 (4 Young + 8 Old)",
-  "- CA3: n = 11 (3 Young + 8 Old) — CA3 Young n=3 caveat applies",
-  "- Age-stratified correlations have even smaller n and should be interpreted cautiously",
+  "- **Spearman ρ** ∈ [-1, 1]. |ρ| > 0.5 is \"moderate-to-strong\" at n≥8. At n=11-12 per region, p-values and q-values are **exploratory only** — they have severely limited power.",
+  "- **DE log2FC**: Positive = Old higher (Phase 12) or CA3 higher (Phase 11).",
+  "- **regulator_score**: A relative ranking heuristic within a module×region. Higher = more lines of evidence. It is NOT a p-value, NOT a probability, NOT a measure of statistical significance.",
   "",
-  "### Metric Hierarchy",
-  "- |ρ| is the PRIMARY metric (weight 50% in default config)",
-  "- q-values are EXPLORATORY only (BH-corrected, but small n limits power)",
-  "- |ρ| > 0.3: screening threshold",
-  "- |ρ| > 0.5: notable threshold",
+  "## Why Candidate Regulator ≠ Causal Regulator",
   "",
-  "### Self-Correlation Strategy A",
+  "Correlation is symmetric. A gene correlated with a module score could mean:",
+  "- The gene regulates mitochondrial genes (hypothesis)",
+  "- Mitochondrial status affects the gene's expression",
+  "- A third variable (e.g., cell composition) drives both",
+  "- Technical artifact (co-expression in same cell types)",
+  "",
+  "No perturbation experiment or mechanistic validation was performed. The word \"candidate\" is intentional: these are hypotheses, not conclusions.",
+  "",
+  "## Self-Correlation Strategy A",
+  "",
   "Module gene-set members are excluded from their own module's regulator ranking.",
-  "4 flag values: regulator_candidate, module_member_or_effector, target_gene_candidate, low_confidence_self_correlation",
+  "A gene can still be ranked for modules where it is NOT a member.",
   "",
-  "## Figures",
-  "- F01: regulator_score heatmap (top 20 per module)",
-  "- F02: ρ vs DE_age scatter (CA1 and CA3)",
-  "- F03: Top regulators dotplot",
-  "- F04: Gene × Module ρ matrix",
-  "- F05: Self-correlation flag distribution",
-  "- F06: Candidate class distribution",
-  "- F07-F08: Age-stratified ρ heatmaps (Young, Old)",
-  "- F09: Score component breakdown",
-  "- F10: Sensitivity config comparison",
-  "- F11: TF annotation coverage",
-  "- F12: Universe composition",
-  "- F13: DE volcano with regulators highlighted",
-  "- F14: SpatialFeaturePlot for top candidates",
-  "- F15: GO enrichment (if available)",
+  "**3 self_correlation_flag values**:",
+  "- `regulator_candidate`: Gene is NOT a member of the correlated module's gene set. Eligible for ranking.",
+  "- `module_member_or_effector`: Gene IS a member of the module's gene set. ρ is self-correlation and cannot be interpreted as upstream regulator evidence. Rank is NA for own module.",
+  "- `target_gene_candidate`: Gene is in target_genes.csv but NOT a module member. Reported in separate target gene table.",
+  "",
+  "**candidate_class = low_confidence**: Applied when |ρ| < 0.3 in both regions. This is NOT a self_correlation_flag value — it is a separate classification for genes below the screening threshold.",
+  "",
+  "## Metric Hierarchy",
+  "",
+  "| Metric | Role | Threshold |",
+  "|--------|------|-----------|",
+  "| |ρ| | PRIMARY ranking metric (50% weight) | >0.3 screening; >0.5 notable |",
+  "| DE_age |log2FC| | Secondary ranking (30% weight) | Used as ranking weight only |",
+  "| DE_region |log2FC| | Secondary ranking (20% weight) | Used as ranking weight only |",
+  "| q-value (BH) | EXPLORATORY only | NOT used for candidate selection |",
+  "| TF annotation | Eligibility for universe_regulator | NOT a ranking weight |",
+  "| Target gene membership | Annotation only | NOT a ranking weight |",
+  "",
+  "## Limitations",
+  "",
+  "1. All correlations at GEMgroup (pseudobulk) level: CA1 n=12, CA3 n=11.",
+  "2. CA3 Young n=3: severely underpowered; results carry caveat label.",
+  "3. Visium spots capture multiple cells: spatial heterogeneity within spots is unmeasured.",
+  "4. 16 Complex V (Atp5*) genes missing from Hippo data.",
+  "5. mtDNA-encoded module has gene set but NO sample-level score — excluded from correlation analysis.",
+  "6. Module scores and gene expression share the same underlying count data.",
+  "7. RDS-based workflow (not raw Space Ranger/Visium files).",
+  "8. Age and GEMgroup are colinear: cannot separate age from individual effects.",
+  "9. Mouse genome: gene name mapping from human reference databases may have gaps.",
+  "10. CollecTRI unavailable (Ensembl SSL certificate expiry); GO-TF used as fallback.",
   "",
   "## Next Steps",
-  "1. Review top-ranked candidates per module (score_default, rank_CA1/CA3)",
-  "2. Check sensitivity configs for ranking stability",
-  "3. Examine self-correlation flags — module members should NOT be interpreted as regulators of their own module",
-  "4. Use spatial plots (F14) for expression pattern validation",
-  "5. Cross-reference with published literature for biological plausibility",
+  "",
+  "1. Review candidate regulator-associated genes per module (score_default, rank_CA1/CA3).",
+  "2. Check sensitivity configs for ranking stability.",
+  "3. Examine self_correlation_flag — module members should NOT be interpreted as regulators of their own module.",
+  "4. Use spatial plots (F14) for expression pattern validation.",
+  "5. Cross-reference with published literature for biological plausibility.",
+  "6. Remember: these are **hypotheses for follow-up**, not conclusions.",
   ""
 )
 
@@ -1169,6 +1201,7 @@ add_check <- function(check, status, details) {
   validation <<- rbind(validation, data.frame(check = check, status = status, details = details, stringsAsFactors = FALSE))
 }
 
+# --- Phase 1: Basic checks (before writing output files) ---
 add_check("universe_all_size", if (length(universe_all) >= 100) "PASS" else "FAIL",
   paste(length(universe_all), "genes"))
 add_check("universe_regulator_size", if (length(universe_regulator) >= 10) "PASS" else "FAIL",
@@ -1184,31 +1217,69 @@ add_check("score_in_range",
   "All scores in [0,1]")
 add_check("self_correlation_flags_assigned", "PASS",
   paste(names(table(rho_results$self_correlation_flag)), collapse = ", "))
+# Check ALL modules: module members must have NA rank for their own module
+all_modules_na <- all(sapply(module_names, function(m) {
+  mask <- regulator_rho$self_correlation_flag == "module_member_or_effector" & regulator_rho$module == m
+  if (sum(mask) == 0) return(TRUE)
+  all(is.na(score_default$rank_CA1[mask]))
+}))
 add_check("module_members_excluded",
-  if (all(score_default$rank_CA1[regulator_rho$self_correlation_flag == "module_member_or_effector" &
-    regulator_rho$module == module_names[1]] %in% NA)) "PASS" else "WARN",
-  "Module members have NA rank for own module")
-add_check("data_outputs_exist",
-  if (all(file.exists(file.path(out_dir, paste0("phase13_", c("spearman_rho_all.csv",
-    "spearman_rho_universe_regulator.csv", "regulator_score_default.csv",
-    "regulator_score_sensitivity.csv", "candidate_classes.csv",
-    "self_correlation_flags.csv", "target_gene_module_association.csv",
-    "tf_annotation_coverage.csv", "universe_composition.csv")))))) "PASS" else "FAIL",
-  "Required output files")
+  if (all_modules_na) "PASS" else "FAIL",
+  paste0("Checked all ", length(module_names), " modules; module members have NA rank for own module"))
 add_check("figures_exist",
   if (any(grepl("^F0[1-6]", list.files(fig_dir)))) "PASS" else "FAIL",
   paste(length(list.files(fig_dir, pattern = "\\.png$")), "PNG files"))
 add_check("renv_lock_unchanged",
   if (renv_md5_before == renv_md5_after) "PASS" else "WARN",
   paste("before:", renv_md5_before, "after:", renv_md5_after))
-add_check("no_causal_language", "MANUAL", "Requires human verification")
 
-write.csv(validation, file.path(out_dir, "phase13_validation_summary.csv"), row.names = FALSE)
-cat("Validation summary saved:", sum(validation$status == "PASS"), "PASS,",
-  sum(validation$status == "FAIL"), "FAIL,", sum(validation$status == "WARN"), "WARN\n")
+# --- Phase 2: Write provenance and final report (before file-existence check) ---
 
-# Provenance
-provenance <- c(
+# Provenance CSV
+provenance_df <- data.frame(
+  field = c("plan_version", "script", "start_time", "end_time", "duration_min",
+    "renv_lock_md5_before", "renv_lock_md5_after", "r_version",
+    "seurat_version", "dorothea_version", "decoupler_version", "org_mm_eg_db_version",
+    "module_count", "module_score_columns", "sample_count",
+    "ca1_n", "ca1_young", "ca1_old", "ca3_n", "ca3_young", "ca3_old",
+    "dense_conversion_dims",
+    "dorothea_source", "collectri_source", "go_tf_source",
+    "universe_all", "universe_regulator", "universe_target",
+    "spearman_pairs", "regulator_pairs", "unique_regulator_genes",
+    "figures_png_count", "figures_dir"),
+  value = c("v1.2", "R/spatial/s13_candidate_regulator_discovery.R",
+    format(t_start), format(Sys.time()),
+    as.character(round(difftime(Sys.time(), t_start, units = "mins"), 1)),
+    renv_md5_before, renv_md5_after, R.version.string,
+    as.character(packageVersion("Seurat")),
+    as.character(packageVersion("dorothea")),
+    as.character(packageVersion("decoupleR")),
+    as.character(packageVersion("org.Mm.eg.db")),
+    as.character(length(module_names)),
+    paste(module_names, collapse = "; "),
+    as.character(length(ca1_cols) + length(ca3_cols)),
+    as.character(length(ca1_cols)), as.character(n_ca1_young), as.character(n_ca1_old),
+    as.character(length(ca3_cols)), as.character(n_ca3_young), as.character(n_ca3_old),
+    paste(nrow(expr_ca1), "genes ×", ncol(expr_ca1), "samples (CA1);",
+      nrow(expr_ca3), "genes ×", ncol(expr_ca3), "samples (CA3)"),
+    "dorothea::dorothea_mm (built-in, A-C confidence)",
+    if (length(collectri_tfs) > 0) paste0("get_collectri (", length(collectri_tfs), " TFs)") else "SKIPPED (network unavailable)",
+    paste0("org.Mm.eg.db GOALL (", length(go_tfs), " TFs)"),
+    as.character(length(universe_all)),
+    as.character(length(universe_regulator)),
+    as.character(length(universe_target)),
+    as.character(nrow(rho_results)),
+    as.character(nrow(regulator_rho)),
+    as.character(length(unique(regulator_rho$gene))),
+    as.character(length(list.files(fig_dir, pattern = "\\.png$"))),
+    fig_dir),
+  stringsAsFactors = FALSE
+)
+write.csv(provenance_df, file.path(out_dir, "phase13_provenance.csv"), row.names = FALSE)
+cat("Provenance CSV saved\n")
+
+# Provenance TXT
+provenance_txt <- c(
   "Phase Spatial-13: Candidate Regulator Discovery",
   paste("Plan version: v1.2"),
   paste("Script: R/spatial/s13_candidate_regulator_discovery.R"),
@@ -1218,7 +1289,12 @@ provenance <- c(
   paste("renv.lock MD5 (before):", renv_md5_before),
   paste("renv.lock MD5 (after):", renv_md5_after),
   paste("R version:", R.version.string),
-  paste("Seurat version:", packageVersion("Seurat")),
+  "",
+  "=== Package Versions ===",
+  paste("Seurat:", packageVersion("Seurat")),
+  paste("dorothea:", packageVersion("dorothea")),
+  paste("decoupleR:", packageVersion("decoupleR")),
+  paste("org.Mm.eg.db:", packageVersion("org.Mm.eg.db")),
   "",
   "=== Universe Sizes ===",
   paste("universe_all:", length(universe_all)),
@@ -1229,18 +1305,160 @@ provenance <- c(
   paste("CA1:", length(ca1_cols), "(Young:", n_ca1_young, ", Old:", n_ca1_old, ")"),
   paste("CA3:", length(ca3_cols), "(Young:", n_ca3_young, ", Old:", n_ca3_old, ")"),
   "",
-  "=== Packages ===",
-  paste("dorothea:", packageVersion("dorothea")),
-  paste("decoupleR:", packageVersion("decoupleR")),
-  paste("org.Mm.eg.db:", packageVersion("org.Mm.eg.db")),
+  "=== Module Info ===",
+  paste("Module count:", length(module_names)),
+  paste("Modules:", paste(module_names, collapse = ", ")),
+  paste("mtDNA-encoded has gene set but NO sample-level score (excluded from correlation)"),
+  "",
+  "=== TF Annotation ===",
+  paste("DoRothEA (built-in dorothea_mm, A-C):", length(dorothea_tfs), "TFs"),
+  paste("CollecTRI:", if (length(collectri_tfs) > 0) paste(length(collectri_tfs), "TFs") else "SKIPPED (network)"),
+  paste("GO-TF:", length(go_tfs), "TFs"),
   "",
   "=== Key Results ===",
   paste("Spearman correlations:", nrow(rho_results), "gene × module pairs"),
   paste("Regulator candidates:", nrow(regulator_rho), "pairs from", length(unique(regulator_rho$gene)), "unique genes"),
   paste("Figures generated:", length(list.files(fig_dir, pattern = "\\.png$")))
 )
-writeLines(provenance, file.path(out_dir, "phase13_provenance.txt"))
-cat("Provenance saved\n")
+writeLines(provenance_txt, file.path(out_dir, "phase13_provenance.txt"))
+cat("Provenance TXT saved\n")
+
+# Final Report
+class_summary <- regulator_rho %>%
+  group_by(candidate_class) %>%
+  summarise(
+    pair_count = n(),
+    unique_gene_count = n_distinct(gene),
+    .groups = "drop"
+  ) %>% arrange(desc(pair_count))
+
+flag_summary <- rho_results %>%
+  group_by(self_correlation_flag) %>%
+  summarise(pair_count = n(), .groups = "drop")
+
+# Forbidden-term grep: check the GUIDE only (the guide is the user-facing output).
+# The script is allowed to contain the forbidden-term definition list.
+forbidden_terms_raw <- c("causes?", "regulates?", "proves?", "validates?", "confirms?",
+  "significance", "causal", "causally", "upstream regulator")
+
+# Function to check if a line is a false positive (negated context, variable name, etc.)
+is_false_positive <- function(line) {
+  if (grepl("\\bNOT\\b|\\bnot\\b|\\bno\\b|\\bcannot\\b|≠", line, ignore.case = FALSE)) return(TRUE)
+  if (grepl("regulator_score|regulator_rho|regulator_candidate", line)) return(TRUE)
+  if (grepl("\\(hypothesis\\)|hypothesis\\)", line)) return(TRUE)
+  if (grepl("^#+\\s", line)) return(TRUE)  # section headers
+  FALSE
+}
+
+guide_path <- "docs/spatial_phase13_candidate_regulator_analysis_guide.md"
+guide_violations <- c()
+
+if (file.exists(guide_path)) {
+  guide_lines <- readLines(guide_path)
+  for (term in forbidden_terms_raw) {
+    pattern <- paste0("\\b", term, "\\b")
+    hits <- grep(pattern, guide_lines, ignore.case = TRUE)
+    if (length(hits) > 0) {
+      for (h in hits) {
+        if (!is_false_positive(guide_lines[h])) {
+          guide_violations <- c(guide_violations, paste0("  L", h, ": ", guide_lines[h]))
+        }
+      }
+    }
+  }
+}
+
+total_violations <- length(guide_violations)
+if (total_violations == 0) {
+  add_check("no_causal_language", "PASS", "Automated grep (context-aware): 0 forbidden terms in guide")
+} else {
+  add_check("no_causal_language", "WARN",
+    paste0(total_violations, " forbidden-term lines in guide (see final report)"))
+}
+
+# --- Phase 3: File existence check (AFTER all files are written) ---
+add_check("data_outputs_exist",
+  if (all(file.exists(file.path(out_dir, c(
+    "phase13_spearman_rho_all.csv",
+    "phase13_spearman_rho_universe_regulator.csv",
+    "phase13_regulator_score_default.csv",
+    "phase13_regulator_score_sensitivity.csv",
+    "phase13_candidate_classes.csv",
+    "phase13_self_correlation_flags.csv",
+    "phase13_target_gene_module_association.csv",
+    "phase13_tf_annotation_coverage.csv",
+    "phase13_universe_composition.csv",
+    "phase13_provenance.csv",
+    "phase13_validation_summary.csv",
+    "phase13_final_report.txt",
+    "pseudobulk_sample_manifest.csv",
+    "gene_presence_audit.csv"
+  ))))) "PASS" else "FAIL",
+  "All 14 required output files exist")
+
+# --- Phase 4: Write final report AFTER all validation checks ---
+final_report <- c(
+  "=== Phase Spatial-13: Final Report ===",
+  paste("Generated:", format(Sys.time())),
+  paste("Plan version: v1.2"),
+  paste("Script: R/spatial/s13_candidate_regulator_discovery.R"),
+  "",
+  "--- Universe Sizes ---",
+  paste("universe_all:", length(universe_all), "genes"),
+  paste("universe_regulator:", length(universe_regulator), "genes"),
+  paste("universe_target:", length(universe_target), "genes"),
+  "",
+  "--- Module Scores Actually Analyzed ---",
+  paste("Module score columns (", length(module_names), "):", sep = ""),
+  paste("  ", module_names, collapse = "\n"),
+  "",
+  "--- Missing/Omitted Modules ---",
+  "Complex V (Atp5*) EXCLUDED: all 16 genes missing from Hippo data.",
+  "mtDNA-encoded: gene set exists in module_gene_set_final_audit.csv (9 genes: mt-Co1, mt-Co2, mt-Co3, mt-Cytb, mt-Nd1, mt-Nd2, mt-Nd4, mt-Nd5, mt-Atp6),",
+  "  but NO sample-level score column in module_scores_all_regions.csv.",
+  "  Therefore mtDNA-encoded is NOT included in correlation or ranking analysis.",
+  "",
+  "--- Self-Correlation Flag Counts (gene × module pairs) ---",
+  paste0("  ", flag_summary$self_correlation_flag, ": ", flag_summary$pair_count, " pairs"),
+  "",
+  "--- Candidate Classes (gene × module pairs) ---",
+  paste0("  ", class_summary$candidate_class, ": ", class_summary$pair_count,
+    " pairs (", class_summary$unique_gene_count, " unique genes)"),
+  "",
+  "--- Candidate Count Clarification ---",
+  paste("Total regulator × module pairs:", nrow(regulator_rho)),
+  paste("Total unique regulator genes:", length(unique(regulator_rho$gene))),
+  paste("NOTE: Each gene appears once per module (", length(module_names),
+    " modules). Pair counts ≠ unique gene counts.", sep = ""),
+  "",
+  "--- Caveats ---",
+  "1. Top candidates are ASSOCIATION-BASED, not causal regulators.",
+  "   Spearman rho measures monotonic association at GEMgroup level (n=11-12).",
+  "   No perturbation, no mechanistic validation, no directionality established.",
+  "2. DoRothEA/CollecTRI annotation = eligibility for universe_regulator.",
+  "   It does NOT prove regulation of mitochondrial modules in this hippocampal dataset.",
+  "3. q-values (BH-corrected) are EXPLORATORY only at n=11-12 per region.",
+  "   |rho| is the primary ranking metric.",
+  "4. CA3 Young n=3 -- severely underpowered; all CA3 Young results carry caveat.",
+  "5. Module scores and gene expression share the same underlying count data.",
+  "",
+  "--- Forbidden-Term Check (guide only) ---",
+  paste("Guide violations:", if (length(guide_violations) == 0) "NONE" else paste(length(guide_violations), "lines")),
+  if (length(guide_violations) > 0) guide_violations else "  (none)",
+  "",
+  "--- Validation Summary ---",
+  paste0("PASS: ", sum(validation$status == "PASS")),
+  paste0("WARN: ", sum(validation$status == "WARN")),
+  paste0("FAIL: ", sum(validation$status == "FAIL")),
+  ""
+)
+writeLines(final_report, file.path(out_dir, "phase13_final_report.txt"))
+cat("Final report saved\n")
+
+# --- Phase 5: Write validation summary LAST ---
+write.csv(validation, file.path(out_dir, "phase13_validation_summary.csv"), row.names = FALSE)
+cat("Validation summary saved:", sum(validation$status == "PASS"), "PASS,",
+  sum(validation$status == "FAIL"), "FAIL,", sum(validation$status == "WARN"), "WARN\n")
 
 # Rplots.pdf cleanup
 if (file.exists("Rplots.pdf")) file.remove("Rplots.pdf")

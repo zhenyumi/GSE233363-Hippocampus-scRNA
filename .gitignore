@@ -29,6 +29,7 @@ renv/.cache/
 # === Generated analysis outputs ===
 results/
 cache/
+omnipathr-log/
 reports/
 *.h5ad
 *.h5
